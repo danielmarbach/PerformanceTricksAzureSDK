@@ -4,11 +4,24 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+		<title>Performance tricks I learned from contributing to the Azure .NET SDK</title>
+
+		<meta name="description" content="As a practical learner, I've found that performance optimizations have been my biggest challenge and the place I've learned the tricks that are the most helpful. These lessons have come by trial and error. As it turns out, the Azure .NET SDK was a perfect “playground” for learning new tricks because it's maintained by people who care and give feedback. Over the past few years, I've contributed over fifty pull requests to the Azure .NET SDK and some of them got accepted. In this session, I'll walk you through the performance improvements I learned from my experiments. Some “superpowers” you will learn are spotting closure allocations and opportunities for memory pooling and, best of all, how to improve them.">
+		<meta name="author" content="Daniel Marbach">
 
 		<link rel="stylesheet" href="dist/reset.css">
 		<link rel="stylesheet" href="dist/reveal.css">
 		<link rel="stylesheet" href="dist/theme/black.css">
+		<style>
+			@keyframes glow {
+				from {
+				text-shadow: 0 0 20px #0089d6;
+				}
+				to {
+				text-shadow: 0 0 30px #0089d6, 0 0 10px #0089d6;
+				}
+			}
+		</style>
 
 		<!-- Theme used for syntax highlighted code -->
 		<link rel="stylesheet" href="plugin/highlight/monokai.css">
@@ -16,13 +29,23 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section>
+
+					<h3 style="text-transform: uppercase;animation: glow 2s ease-in-out infinite alternate;text-align: center;">Performance tricks</h3>
+					<p><div>from contributing to the</div><a href="https://github.com/Azure/azure-sdk-for-net">
+						<img src="https://azure.github.io/azure-sdk-for-net/logo.svg" alt="Azure SDK logo" style="width: 300px; margin: 0 auto 1rem auto; text-align:left; background: transparent;filter: invert(34%) sepia(86%) saturate(1173%) hue-rotate(174deg) brightness(98%) contrast(101%);">
+					</a></p>
+					<p>
+						<small>by <a href="https://twitter.com/danielmarbach">Daniel Marbach</a></small>
+					</p>
+				</section>
 			</div>
 		</div>
 
 		<script src="dist/reveal.js"></script>
+		<script src="plugin/zoom/zoom.js"></script>
 		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/search/search.js"></script>
 		<script src="plugin/markdown/markdown.js"></script>
 		<script src="plugin/highlight/highlight.js"></script>
 		<script>
@@ -30,10 +53,12 @@
 			// - https://revealjs.com/initialization/
 			// - https://revealjs.com/config/
 			Reveal.initialize({
+				controls: true,
+				progress: true,
 				hash: true,
 
 				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+				plugins: [ RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight ]
 			});
 		</script>
 	</body>
