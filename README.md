@@ -22,7 +22,7 @@ David Fowler: Scale for an application can mean the number of users that will co
 
 A good way to explore what scale means is to discover the assumptions that have accumulated over time in a given code base by paying close attention to what is instantiated, parsed, processed etc. per request and how those assumptions in the code base affect the performance characteristics (memory, throughput...) at scale.
 
-## General rules of thumbs
+## General rules of thumb
 
 - Avoid excessive allocations or avoid the GC overhead
   - Be aware of closure allocations
