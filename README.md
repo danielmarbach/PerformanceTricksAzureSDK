@@ -33,6 +33,11 @@ A good way to explore what scale means is to discover the assumptions that have 
   - For smaller local buffers consider using the stack
 - Avoid unnecessary copying of memory
 
+## Avoid excessive allocations
+
+Closure Allocations SDK
+Also show result of closure allocation reduction in NSB pipeline to drive the point home
+
 
 ## Interesting Pullrequests
 
