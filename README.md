@@ -18,6 +18,21 @@ But what does at scale even mean? How can I find out whether the optimizations I
 
 I've heard it countless times already: "Wow that's crazy, is the complexity of this change really worth it? Isn't that premature optimization?" While it is true that performance improvements can be addictive, it is also true that nobody likes to optimize code that is "fast enough" or is only executed a few times day on a background job. 
 
+David Fowler: Scale for an application can mean the number of users that will concurrently connect to the application at any given time, the amount of input to process (for example the size of the data) or the number of times data needs to be processed (for example the number of requests per second). For us as engineers it means we have to know what to ignore and knowing what to pay close attention to.
+
+A good way to explore what scale means is to discover the assumptions that have accumulated over time in a given code base by paying close attention to what is instantiated, parsed, processed etc. per request and how those assumptions in the code base affect the performance characteristics (memory, throughput...) at scale.
+
+## General rules of thumbs
+
+- Avoid excessive allocations or avoid the GC overhead
+  - Be aware of closure allocations
+  - Be aware of params overload
+  - Where possible and feasible use value types but pay attention to unnecessary boxing
+  - Think twice before using LINQ or unnecessary enumeration on the hot path
+  - Pool and re-use buffers
+  - For smaller local buffers consider using the stack
+- Avoid unnecessary copying of memory
+
 
 ## Interesting Pullrequests
 
@@ -45,4 +60,5 @@ I've heard it countless times already: "Wow that's crazy, is the complexity of t
 
 ## Interesting further reading material
 
-- [High-performance code design patterns in C#](https://prodotnetmemory.com/slides/PerformancePatternsLong)
+- [Konrad Kokosa - High-performance code design patterns in C#](https://prodotnetmemory.com/slides/PerformancePatternsLong)
+- [David Fowler - Implementation details matter](https://speakerdeck.com/davidfowl/implementation-details-matter)
