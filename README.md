@@ -33,7 +33,118 @@ A good way to explore what scale means is to discover the assumptions that have 
   - For smaller local buffers consider using the stack
 - Avoid unnecessary copying of memory
 
+## Brief overview over the terminologies used
+
+Quick sample of Azure Service Bus SDK
+Explain the layering
+
 ## Avoid excessive allocations
+
+### Think twice before using LINQ or unnecessary enumeration on the hot path
+
+LINQ is great and I wouldn't want to miss it at all. Yet on the hot path it is far to easy to get into troubles with LINQ because it can cause hidden allocations. Let's look at a piece of code from the `AmqpReceiver`
+
+```csharp
+
+public class AmqpReceiver 
+{
+    ConcurrentBag<Guid> _requestResponseLockedMessages = new ();
+    
+    public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
+    
+    private Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+    {
+        Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
+        if (lockTokenGuids.Any(lockToken => _requestResponseLockedMessages.Contains(lockToken))) 
+        {
+          // do special path accessing lockTokenGuids
+          return Task.CompletedTask;
+        }
+        // do normal path accessing lockTokenGuids
+        return Task.CompletedTask;
+    }
+}
+```
+The public API accepts the broadest possible enumeration type `IEnumerable<T>` by design and then converts the strings into `Guid`. Then it checks by using `Any` whether there is a lock token contained in the provided tokens that was previously already seen. Let's look how the code looks like in the decompiler
+
+```csharp
+public class AmqpReceiver
+{
+    [Serializable]
+    [CompilerGenerated]
+    private sealed class <>c
+    {
+        public static readonly <>c <>9 = new <>c();
+
+        public static Func<string, Guid> <>9__2_0;
+
+        internal Guid <CompleteInternalAsync>b__2_0(string token)
+        {
+            return new Guid(token);
+        }
+
+    }
+
+    // omitted for brevity
+
+    private Task CompleteInternalAsync(IEnumerable<string> lockTokens)
+    {
+        Enumerable.Any(Enumerable.ToArray(Enumerable.Select(lockTokens, <>c.<>9__2_0 ?? (<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0)))), new Func<Guid, bool>(<CompleteInternalAsync>b__2_1));
+        return Task.CompletedTask;
+    }
+
+    [CompilerGenerated]
+    private bool <CompleteInternalAsync>b__2_1(Guid lockToken)
+    {
+        return Enumerable.Contains(_requestResponseLockedMessages, lockToken);
+    }
+}
+```
+
+For every call of CompleteInternalAsync a new instance of `Func<Guid, bool>` is allocated that points to `<CompleteInternalAsync>b__2_1`. A closure captures the `_requestResponseLockedMessages` and the `lockToken` as state. This allocation is unnecessary. 
+
+```csharp
+    public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
+
+    private Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+    {
+        Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
+        foreach (var tokenGuid in lockTokenGuids) 
+        {
+           if (_requestResponseLockedMessages.Contains(tokenGuid))
+           {
+               return Task.CompletedTask;
+           }
+        }
+        return Task.CompletedTask;
+    }
+```
+
+get decompiled down to
+
+```csharp
+    private Task CompleteInternalAsync(IEnumerable<string> lockTokens)
+    {
+        Guid[] array = Enumerable.ToArray(Enumerable.Select(lockTokens, <>c.<>9__2_0 ?? (<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0))));
+        int num = 0;
+        while (num < array.Length)
+        {
+            Guid item = array[num];
+            if (_requestResponseLockedMessages.Contains(item))
+            {
+                return Task.CompletedTask;
+            }
+            num++;
+        }
+        return Task.CompletedTask;
+    }
+```
+
+TODO: Talk about early materialization and list creation with well known size?
+
+- Use `Array.Empty<T>` to represent empty arrays
+- Use `Enumerable.Empty<T>` to represent empty enumerables
+- 
 
 Closure Allocations SDK
 Also show result of closure allocation reduction in NSB pipeline to drive the point home
