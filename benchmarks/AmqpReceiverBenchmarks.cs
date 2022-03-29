@@ -58,15 +58,15 @@ public class AmqpReceiverBenchmarks
         afterV2 = new AmqpReceiverAfterV2();
     }
 
-    // [Benchmark(Baseline = true)]
-    // public Task Before()
-    // {
-    //     return before.CompleteAsync(input);
-    // }
-
-
-    //[Benchmark]
     [Benchmark(Baseline = true)]
+    public Task Before()
+    {
+        return before.CompleteAsync(input);
+    }
+
+
+    [Benchmark]
+    // [Benchmark(Baseline = true)]
     public Task AfterV1()
     {
         return afterV1.CompleteAsync(input);
