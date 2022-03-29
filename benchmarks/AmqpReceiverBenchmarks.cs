@@ -139,12 +139,11 @@ public class AmqpReceiverAfterV2
         int count = lockTokens.Count;
         Guid[] lockTokenGuids = count == 0 ? Array.Empty<Guid>() : new Guid[count];
         Unsafe.SkipInit(out lockTokenGuids);
-        var asSpan = lockTokenGuids.AsSpan();
         int index = 0;
         foreach (var token in lockTokens)
         {
             var tokenGuid = new Guid(token);
-            asSpan[index++] = tokenGuid;
+            lockTokenGuids[index++] = tokenGuid;
             if (_requestResponseLockedMessages.Contains(tokenGuid))
             {
                 return Task.CompletedTask;
