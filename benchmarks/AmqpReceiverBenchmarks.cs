@@ -144,7 +144,7 @@ public class AmqpReceiverAfterV2
         foreach (var token in lockTokens)
         {
             var tokenGuid = new Guid(token);
-            lockTokenGuids[index++] = tokenGuid;
+            asSpan[index++] = tokenGuid;
             if (_requestResponseLockedMessages.Contains(tokenGuid))
             {
                 return Task.CompletedTask;
