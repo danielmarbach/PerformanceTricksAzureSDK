@@ -72,11 +72,11 @@ public class AmqpReceiverBenchmarks
         return afterV1.CompleteAsync(input);
     }
 
-    [Benchmark]
-    public Task AfterV2()
-    {
-        return afterV2.CompleteAsync(input);
-    }
+    // [Benchmark]
+    // public Task AfterV2()
+    // {
+    //     return afterV2.CompleteAsync(input);
+    // }
 
 }
 
