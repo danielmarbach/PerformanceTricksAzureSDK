@@ -24,7 +24,7 @@ A good way to explore what scale means is to discover the assumptions that have 
 
 ## General rules of thumb
 
-- Avoid excessive allocations or avoid the GC overhead
+- Avoid excessive allocations to avoid the GC overhead
   - Be aware of closure allocations
   - Be aware of params overload
   - Where possible and feasible use value types but pay attention to unnecessary boxing
@@ -42,7 +42,7 @@ Explain the layering
 
 ### Think twice before using LINQ or unnecessary enumeration on the hot path
 
-LINQ is great and I wouldn't want to miss it at all. Yet on the hot path it is far to easy to get into troubles with LINQ because it can cause hidden allocations. Let's look at a piece of code from the `AmqpReceiver`
+LINQ is great and I wouldn't want to miss it at all. Yet on the hot path it is far to easy to get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT to optimize. Let's look at a piece of code from the `AmqpReceiver`
 
 ```csharp
 
@@ -140,11 +140,178 @@ get decompiled down to
     }
 ```
 
-TODO: Talk about early materialization and list creation with well known size?
+Let's see what we got here.
+
+![](benchmarks/LinqBeforeAfterComparison.png)
+
+By getting rid of the `Any` we were able to squeeze out some good performance improvements. Sometimes though we can do even more. For example there are a few general rules we can fully when we turn a refactor a code path using LINQ to collection based operations. 
 
 - Use `Array.Empty<T>` to represent empty arrays
 - Use `Enumerable.Empty<T>` to represent empty enumerables
-- 
+- When the size of the items to be added to the collection are known upfront initialize the collection with the correct count to prevent the collection from growing and thus allocating more and reshuffling things internally
+- Use the concrete collection type instead of interfaces or abstract types. For example when enumerating through a `List<T>` with `foreach` it uses a non-allocating `List<T>.Enumerator` struct. But when it is used through for example `IEnumerable<T>` that struct is boxed to `IEnumerator<T>` in the foreach and thus allocates.
+- With more modern CSharp versions that have good pattern matching support it is sometimes possible to do a quick type check and based on the underlying collection type get access to the count without having to use `Count()`. With .NET 6 and later it is also possible to use [`Enumerable.TryGetNonEnumeratedCount`](https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.trygetnonenumeratedcount) which internally does collection type checking to get the count without enumerating.
+- Wait with instantiating collections until you really need them.
+
+```csharp
+
+List<object> data = data = Enumerable.Repeat(new SomeClass(), NumberOfItems).Cast<object>().ToList();
+
+public List<SomeClass> Original()
+{
+    var copyList = new List<SomeClass>();
+    foreach (var value in GetValue<SomeClass>())
+    {
+        copyList.Add(value);
+    }
+
+    return copyList;
+}
+
+IEnumerable<TValue> GetValue<TValue>()
+{
+    return data.Cast<TValue>();
+}
+```
+
+```csharp
+public List<SomeClass> List()
+{
+    List<SomeClass> copyList = null;
+    var enumerable = GetValueList<SomeClass>();
+    foreach (var value in enumerable)
+    {
+        copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
+            ? new List<SomeClass>(readOnlyList.Count)
+            : new List<SomeClass>();
+
+        copyList.Add(value);
+    }
+
+    return copyList;
+}
+
+IEnumerable<TValue> GetValueList<TValue>()
+{
+    List<TValue> values = null;
+    foreach (var item in data)
+    {
+        values ??= new List<TValue>(data.Count);
+        values.Add((TValue)item);
+    }
+    return values ?? Enumerable.Empty<TValue>();
+}
+```
+
+by slightly tweaking `GetValueList`
+
+```csharp
+List<TValue> GetValueListReturnList<TValue>()
+{
+    var values = new List<TValue>(data.Count);
+    foreach (var item in data)
+    {
+        values.Add((TValue)item);
+    }
+    return values;
+}
+```
+
+or turning the `GetValueListReturnList` `foreach` into a `for` loop
+
+```csharp
+List<TValue> GetValueListReturnListFor<TValue>()
+{
+    var values = new List<TValue>(data.Count);
+    for (var index = 0; index < data.Count; index++)
+    {
+        var item = data[index];
+        values.Add((TValue) item);
+    }
+
+    return values;
+}
+```
+
+and then combining that with replacing the outer `foreach` with a `for` loop as well
+
+```csharp
+public List<SomeClass> ListForReturnListFor()
+{
+    List<SomeClass> copyList = null;
+    var enumerable = GetValueListReturnListFor<SomeClass>();
+    for (var index = 0; index < enumerable.Count; index++)
+    {
+        var value = enumerable[index];
+        copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
+            ? new List<SomeClass>(readOnlyList.Count)
+            : new List<SomeClass>();
+
+        copyList.Add(value);
+    }
+
+    return copyList;
+}
+```
+
+![](benchmarks/CollectionComparison.png)
+
+Yet again it is important to not just blindly fall into the trap of trying to optimize things. The context of the piece of code that you are trying to optimize is crucial. For example if you are trying to optimize something that uses `IEnumerable` that is passed based on the user input like in the case of the `AmqReceiver` by applying the rules above you might turn this piece of code:
+
+```csharp
+public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
+
+private Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+{
+    Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
+    foreach (var tokenGuid in lockTokenGuids) 
+    {
+        if (_requestResponseLockedMessages.Contains(tokenGuid))
+        {
+            return Task.CompletedTask;
+        }
+    }
+    return Task.CompletedTask;
+}
+```
+
+into something like
+
+```csharp
+public Task CompleteAsync(IEnumerable<string> lockTokens)
+{
+    IReadOnlyCollection<string> readOnlyCollection = lockTokens switch
+    {
+        IReadOnlyCollection<string> asReadOnlyCollection => asReadOnlyCollection,
+        _ => lockTokens.ToArray(),
+    };
+    return CompleteInternalAsync(readOnlyCollection);
+}
+
+
+private Task CompleteInternalAsync(IReadOnlyCollection<string> lockTokens)
+{
+    int count = lockTokens.Count;
+    Guid[] lockTokenGuids = count == 0 ? Array.Empty<Guid>() : new Guid[count];
+    int index = 0;
+    foreach (var token in lockTokens)
+    {
+        var tokenGuid = new Guid(token);
+        lockTokenGuids[index++] = tokenGuid;
+        if (_requestResponseLockedMessages.Contains(tokenGuid))
+        {
+            return Task.CompletedTask;
+        }
+    }
+    return Task.CompletedTask;
+}
+```
+
+let's see how this code behaves under various inputs passed as `IEnumerable<string>`.
+
+![](benchmarks/LinqAfterComparison.png)
+
+while we managed to get some additional savings in terms of allocations over some collection types we can see actually passing an enumerable that gets lazy enumerated is behaving much worse then our first simple optimization. 
 
 Closure Allocations SDK
 Also show result of closure allocation reduction in NSB pipeline to drive the point home
@@ -178,3 +345,4 @@ Also show result of closure allocation reduction in NSB pipeline to drive the po
 
 - [Konrad Kokosa - High-performance code design patterns in C#](https://prodotnetmemory.com/slides/PerformancePatternsLong)
 - [David Fowler - Implementation details matter](https://speakerdeck.com/davidfowl/implementation-details-matter)
+- [Reuben Bond - Performance Tuning for .NET Core](https://reubenbond.github.io/posts/dotnet-perf-tuning)
