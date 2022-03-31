@@ -256,7 +256,7 @@ public List<SomeClass> ListForReturnListFor()
 
 ![](benchmarks/CollectionComparison.png)
 
-Yet again it is important to not just blindly fall into the trap of trying to optimize things. The context of the piece of code that you are trying to optimize is crucial. For example if you are trying to optimize something that uses `IEnumerable` that is passed based on the user input like in the case of the `AmqReceiver` by applying the rules above you might turn this piece of code:
+Now we are really getting in weird territory. Arguably optimizing things at the level of `foreach` vs `for` can be considered to be too crazy and esoteric. Like with all things it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial. For example if you are trying to optimize something that uses `IEnumerable` that is passed based on the user input like in the case of the `AmqReceiver` by applying the rules above you might turn this piece of code:
 
 ```csharp
 public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
