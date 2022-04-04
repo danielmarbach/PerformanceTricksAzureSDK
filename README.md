@@ -313,9 +313,134 @@ let's see how this code behaves under various inputs passed as `IEnumerable<stri
 
 while we managed to get some additional savings in terms of allocations over some collection types we can see actually passing an enumerable that gets lazy enumerated is behaving much worse then our first simple optimization. 
 
-Closure Allocations SDK
-Also show result of closure allocation reduction in NSB pipeline to drive the point home
+### Be aware of closure allocations
 
+We have already touched a bit on closure allocations during our LINQ performance investigations. But closures can occur anywhere where we have lambdas (`Action` or `Func` delegates) being invoked that access state from the outside of the lambda. 
+
+```csharp
+internal async Task RunOperation(Func<TimeSpan, Task> operation, TransportConnectionScope scope, CancellationToken cancellationToken) 
+{
+    TimeSpan tryTimeout = CalculateTryTimeout(0);
+    // omitted
+    while (!cancellationToken.IsCancellationRequested)
+    {
+        if (IsServerBusy)
+        {
+            await Task.Delay(ServerBusyBaseSleepTime, cancellationToken).ConfigureAwait(false);
+        }
+
+        try
+        {
+            await operation(tryTimeout).ConfigureAwait(false);
+            return;
+        }
+        catch 
+        {
+            // omitted
+        }
+    }
+}
+```
+
+the usage of the retry policy:
+
+```csharp
+TransportMessageBatch messageBatch = null;
+Task createBatchTask = _retryPolicy.RunOperation(async (timeout) =>
+{
+    messageBatch = await CreateMessageBatchInternalAsync(options, timeout).ConfigureAwait(false);
+},
+_connectionScope,
+cancellationToken);
+await createBatchTask.ConfigureAwait(false);
+return messageBatch;
+```
+
+get compiled down to something like
+
+```csharp
+if (num1 != 0)
+{
+    this.\u003C\u003E8__1 = new AmqpSender.\u003C\u003Ec__DisplayClass16_0();
+    this.\u003C\u003E8__1.\u003C\u003E4__this = this.\u003C\u003E4__this;
+    this.\u003C\u003E8__1.options = this.options;
+    this.\u003C\u003E8__1.messageBatch = (TransportMessageBatch) null;
+    configuredTaskAwaiter = amqpSender._retryPolicy.RunOperation(new Func<TimeSpan, Task>((object) this.\u003C\u003E8__1, __methodptr(\u003CCreateMessageBatchAsync\u003Eb__0)), (TransportConnectionScope) amqpSender._connectionScope, this.cancellationToken).ConfigureAwait(false).GetAwaiter();
+    if (!configuredTaskAwaiter.IsCompleted)
+    {
+        this.\u003C\u003E1__state = num2 = 0;
+        this.\u003C\u003Eu__1 = configuredTaskAwaiter;
+        ((AsyncTaskMethodBuilder<TransportMessageBatch>) ref this.\u003C\u003Et__builder).AwaitUnsafeOnCompleted<ConfiguredTaskAwaitable.ConfiguredTaskAwaiter, AmqpSender.\u003CCreateMessageBatchAsync\u003Ed__16>((M0&) ref configuredTaskAwaiter, (M1&) ref this);
+        return;
+    }
+}
+```
+
+by leveraging the latest improvements to the language and the runtime such as static lambdas, ValueTasks and ValueTuples and introduing a generic parameter we can modify the code to allow passing in the required state from the outside into the lambda.
+
+```csharp
+internal async ValueTask RunOperation<T1>(
+    Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
+    T1 t1,
+    TransportConnectionScope scope,
+    CancellationToken cancellationToken) =>
+    await RunOperation(static async (value, timeout, token) =>
+    {
+        var (t1, operation) = value;
+        await operation(t1, timeout, token).ConfigureAwait(false);
+        return default(object);
+    }, (t1, operation), scope, cancellationToken).ConfigureAwait(false);
+
+internal async ValueTask<TResult> RunOperation<T1, TResult>(
+    Func<T1, TimeSpan, CancellationToken, ValueTask<TResult>> operation,
+    T1 t1,
+    TransportConnectionScope scope,
+    CancellationToken cancellationToken)
+{
+    TimeSpan tryTimeout = CalculateTryTimeout(0);
+    // omitted
+    while (!cancellationToken.IsCancellationRequested)
+    {
+        if (IsServerBusy)
+        {
+            await Task.Delay(ServerBusyBaseSleepTime, cancellationToken).ConfigureAwait(false);
+        }
+
+        try
+        {
+            return await operation(t1, tryTimeout, cancellationToken).ConfigureAwait(false);
+        }
+        catch 
+        {
+            // omitted
+        }
+    }
+}
+```
+
+This then gets compiled down to
+
+```csharp
+if (num1 != 0)
+{
+    configuredTaskAwaiter = t1._retryPolicy.RunOperation<AmqpSender, CreateMessageBatchOptions, TransportMessageBatch>(AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 ?? (AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 = new Func<AmqpSender, CreateMessageBatchOptions, TimeSpan, CancellationToken, Task<TransportMessageBatch>>((object) AmqpSender.\u003C\u003Ec.\u003C\u003E9, __methodptr(\u003CCreateMessageBatchAsync\u003Eb__16_0))), t1, this.options, (TransportConnectionScope) t1._connectionScope, this.cancellationToken).ConfigureAwait(false).GetAwaiter();
+    if (!configuredTaskAwaiter.IsCompleted)
+    {
+        this.\u003C\u003E1__state = num2 = 0;
+        this.\u003C\u003Eu__1 = configuredTaskAwaiter;
+        ((AsyncValueTaskMethodBuilder<TransportMessageBatch>) ref this.\u003C\u003Et__builder).AwaitUnsafeOnCompleted<ConfiguredTaskAwaitable<TransportMessageBatch>.ConfiguredTaskAwaiter, AmqpSender.\u003CCreateMessageBatchAsync\u003Ed__16>((M0&) ref configuredTaskAwaiter, (M1&) ref this);
+        return;
+    }
+}
+```
+
+With that small change we save the display class and the function delegate allocations and can properly usage methods that support value tasks without having to allocate a task instance when not necessary.
+
+To demonstrate how these can add up in real world scenarios let me show you a before and after comparison when I [removed the closure allocations for NServiceBus pipeline execution](https://github.com/Particular/NServiceBus/pull/6237) code.
+
+![](benchmarks/NServiceBusPipelineExecution.png)
+
+But how would I detect those? When using memory tools look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) for Rider for example can also help to discover these types of issues while writing or refactoring code. 
 
 ## Interesting Pullrequests
 
@@ -335,6 +460,7 @@ Also show result of closure allocation reduction in NSB pipeline to drive the po
   - [ServiceBusRetryPolicy generic overloads to avoid closure capturing](https://github.com/Azure/azure-sdk-for-net/pull/19522)
   - [Use new state based overloads where possible to avoid closures](https://github.com/Azure/azure-sdk-for-net/pull/19884) 
   - [TrackPublishHandlerAsActiveAsync closure and synchronous invocation hint](https://github.com/Azure/azure-sdk-for-net/pull/26986/files)
+  - [NServiceBUs v8 Pipeline Optimizations](https://github.com/Particular/NServiceBus/pull/6237)
 - Enumerations and LINQ
   - [ServiceBusProcessor RunReceiveTaskAsync small improvements](https://github.com/Azure/azure-sdk-for-net/pull/19665) 
   - [[Azure Service Bus] Remove unnecessary LINQ on AmqpReceiver](https://github.com/Azure/azure-sdk-for-net/pull/11272)
