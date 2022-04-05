@@ -6,19 +6,19 @@ Over the past few years, I've contributed over fifty pull requests to the Azure 
 
 ## Outline
 
-.NET has been evolving over the years into a modern and high performance platform. The languages running on .NET have also been improving and allowing to fall down to lower levels without giving up on the safety guarantees too much or only where it is really needed. It is less and less needed to use unmanaged languages likek C/C++ to achieve code that performs well at scale.
+.NET has been evolving over the years into a modern and high-performance platform. The languages running on .NET have also been improving and allowing to fall to lower levels without giving up on the safety guarantees too much or only where it is really needed. It is less and less needed to use unmanaged languages like C/C++ to achieve code that performs well at scale.
 
 ## Caveats
 
-In this talk I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. The focus is purely on code with examples in CSharp. Some of the optimizations shown here can be seen as esoteric in typical line of business applications and I wouldn't recommend jumping to conclusions and applying those everywhere. Yet it is important to note that for code that is executed under scale optimizations on code can bring a lot of benefit to the table due to not only being fast but also being more efficient in resource usage, execution time, throughput and memory usage.
+In this talk, I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. The focus is purely on code with examples in CSharp. Some optimizations shown here can be seen as esoteric in typical line of business applications, and I wouldn't recommend jumping to conclusions and applying those everywhere. It is important to note that for code that is executed under scale, optimizations on code can bring a lot of benefit to the table due to not only being fast but also being more efficient in resource usage, execution time, throughput and memory usage.
 
-But what does at scale even mean? How can I find out whether the optimizations I'm trying to make have value and I'm not getting called out by my colleagues for premature optimizations?
+But what does at scale even mean? How can I find out whether the optimizations I'm trying to make have value, and I'm not getting called out by my colleagues for premature optimizations?
 
 ## What does at scale mean?
 
-I've heard it countless times already: "Wow that's crazy, is the complexity of this change really worth it? Isn't that premature optimization?" While it is true that performance improvements can be addictive, it is also true that nobody likes to optimize code that is "fast enough" or is only executed a few times day on a background job. 
+I've heard countless times already: "Wow, that's crazy, is the complexity of this change really worth it? Isn't that premature optimization?" While it is true that performance improvements can be addictive, it is also true that nobody likes to optimize code that is "fast enough" or is only executed a few times a day as a background job. 
 
-David Fowler: Scale for an application can mean the number of users that will concurrently connect to the application at any given time, the amount of input to process (for example the size of the data) or the number of times data needs to be processed (for example the number of requests per second). For us as engineers it means we have to know what to ignore and knowing what to pay close attention to.
+David Fowler: Scale for an application can mean the number of users that will concurrently connect to the application at any given time, the amount of input to process (for example the size of the data) or the number of times data needs to be processed (for example the number of requests per second). For us, as engineers, it means we have to know what to ignore and knowing what to pay close attention to.
 
 A good way to explore what scale means is to discover the assumptions that have accumulated over time in a given code base by paying close attention to what is instantiated, parsed, processed etc. per request and how those assumptions in the code base affect the performance characteristics (memory, throughput...) at scale.
 
@@ -26,11 +26,11 @@ A good way to explore what scale means is to discover the assumptions that have 
 
 - Avoid excessive allocations to avoid the GC overhead
   - Be aware of closure allocations
-  - Be aware of params overload
+  - Be aware of parameter overloads
   - Where possible and feasible use value types but pay attention to unnecessary boxing
   - Think twice before using LINQ or unnecessary enumeration on the hot path
   - Pool and re-use buffers
-  - For smaller local buffers consider using the stack
+  - For smaller local buffers, consider using the stack
 - Avoid unnecessary copying of memory
 
 ## Brief overview over the terminologies used
@@ -42,7 +42,7 @@ Explain the layering
 
 ### Think twice before using LINQ or unnecessary enumeration on the hot path
 
-LINQ is great and I wouldn't want to miss it at all. Yet on the hot path it is far to easy to get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT to optimize. Let's look at a piece of code from the `AmqpReceiver`
+LINQ is great, and I wouldn't want to miss it at all. Yet, on the hot path it is far too easy to get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT to optimize. Let's look at a piece of code from the `AmqpReceiver`
 
 ```csharp
 
@@ -144,13 +144,13 @@ Let's see what we got here.
 
 ![](benchmarks/LinqBeforeAfterComparison.png)
 
-By getting rid of the `Any` we were able to squeeze out some good performance improvements. Sometimes though we can do even more. For example there are a few general rules we can fully when we turn a refactor a code path using LINQ to collection based operations. 
+By getting rid of the `Any` we were able to squeeze out some good performance improvements. Sometimes, though, we can do even more. For example, there are a few general rules we can fully when we turn a refactor a code path using LINQ to collection-based operations. 
 
 - Use `Array.Empty<T>` to represent empty arrays
 - Use `Enumerable.Empty<T>` to represent empty enumerables
-- When the size of the items to be added to the collection are known upfront initialize the collection with the correct count to prevent the collection from growing and thus allocating more and reshuffling things internally
-- Use the concrete collection type instead of interfaces or abstract types. For example when enumerating through a `List<T>` with `foreach` it uses a non-allocating `List<T>.Enumerator` struct. But when it is used through for example `IEnumerable<T>` that struct is boxed to `IEnumerator<T>` in the foreach and thus allocates.
-- With more modern CSharp versions that have good pattern matching support it is sometimes possible to do a quick type check and based on the underlying collection type get access to the count without having to use `Count()`. With .NET 6 and later it is also possible to use [`Enumerable.TryGetNonEnumeratedCount`](https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.trygetnonenumeratedcount) which internally does collection type checking to get the count without enumerating.
+- When the size of the items to be added to the collection are known upfront, initialize the collection with the correct count to prevent the collection from growing and thus allocating more and reshuffling things internally
+- Use the concrete collection type instead of interfaces or abstract types. For example, when enumerating through a `List<T>` with `foreach` it uses a non-allocating `List<T>.Enumerator` struct. But when it is used through for example `IEnumerable<T>` that struct is boxed to `IEnumerator<T>` in the foreach and thus allocates.
+- With more modern CSharp versions that have good pattern matching support, it is sometimes possible to do a quick type check and based on the underlying collection type get access to the count without having to use `Count()`. With .NET 6, and later, it is also possible to use [`Enumerable.TryGetNonEnumeratedCount`](https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.trygetnonenumeratedcount) which internally does collection type checking to get the count without enumerating.
 - Wait with instantiating collections until you really need them.
 
 ```csharp
@@ -256,7 +256,7 @@ public List<SomeClass> ListForReturnListFor()
 
 ![](benchmarks/CollectionComparison.png)
 
-Now we are really getting in weird territory. Arguably optimizing things at the level of `foreach` vs `for` can be considered to be too crazy and esoteric. Like with all things it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial. For example if you are trying to optimize something that uses `IEnumerable` that is passed based on the user input like in the case of the `AmqReceiver` by applying the rules above you might turn this piece of code:
+Now we are really getting in weird territory. Arguably, optimizing things at the level of `foreach` vs `for` can be considered to be too crazy and esoteric. Like with all things, it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial. For example, if you are trying to optimize something that uses `IEnumerable` that is passed based on the user input like as for the `AmqReceiver` by applying the rules above you might turn this piece of code:
 
 ```csharp
 public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
@@ -311,7 +311,7 @@ let's see how this code behaves under various inputs passed as `IEnumerable<stri
 
 ![](benchmarks/LinqAfterComparison.png)
 
-while we managed to get some additional savings in terms of allocations over some collection types we can see actually passing an enumerable that gets lazy enumerated is behaving much worse then our first simple optimization. 
+while we managed to get some additional savings in terms of allocations over some collection types, we can see actually passing an enumerable that gets lazy enumerated is behaving much worse than our first simple optimization. 
 
 ### Be aware of closure allocations
 
@@ -376,7 +376,7 @@ if (num1 != 0)
 }
 ```
 
-by leveraging the latest improvements to the language and the runtime such as static lambdas, ValueTasks and ValueTuples and introduing a generic parameter we can modify the code to allow passing in the required state from the outside into the lambda.
+by leveraging the latest improvements to the language and the runtime such as static lambdas, ValueTasks and ValueTuples and introducing a generic parameter we can modify the code to allow passing in the required state from the outside into the lambda.
 
 ```csharp
 internal async ValueTask RunOperation<T1>(
@@ -434,13 +434,13 @@ if (num1 != 0)
 }
 ```
 
-With that small change we save the display class and the function delegate allocations and can properly usage methods that support value tasks without having to allocate a task instance when not necessary.
+With that small change, we save the display class and the function delegate allocations and can properly usage methods that support value tasks without having to allocate a task instance when not necessary.
 
-To demonstrate how these can add up in real world scenarios let me show you a before and after comparison when I [removed the closure allocations for NServiceBus pipeline execution](https://github.com/Particular/NServiceBus/pull/6237) code.
+To demonstrate how these can add up in real-world scenarios, let me show you a before and after comparison when I [removed the closure allocations for NServiceBus pipeline execution](https://github.com/Particular/NServiceBus/pull/6237) code.
 
 ![](benchmarks/NServiceBusPipelineExecution.png)
 
-But how would I detect those? When using memory tools look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) for Rider for example can also help to discover these types of issues while writing or refactoring code. 
+But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) for Rider for example can also help to discover these types of issues while writing or refactoring code. 
 
 ## Interesting Pullrequests
 
@@ -453,12 +453,12 @@ But how would I detect those? When using memory tools look out for excessive all
   - [Sender side](https://github.com/Azure/azure-sdk-for-net/pull/20098)
   - [Remove byte array allocations from AmqpReceiver DisposeMessagesAsync by buffering](https://github.com/Azure/azure-sdk-for-net/pull/20427)
   - [Use the appropriate type instead of converting all over the place](https://github.com/Azure/azure-sdk-for-net/pull/20543/files)
-- Where possible and feasible use ValueTypes
+- Where possible and feasible, use ValueTypes
   - [ValueStopWatch instead of a StopWatch](https://github.com/Azure/azure-sdk-for-net/pull/11266)
   - [Event Source remove allocations and boxing](https://github.com/Azure/azure-sdk-for-net/pull/26989)
 - Closure Allocations
   - [ServiceBusRetryPolicy generic overloads to avoid closure capturing](https://github.com/Azure/azure-sdk-for-net/pull/19522)
-  - [Use new state based overloads where possible to avoid closures](https://github.com/Azure/azure-sdk-for-net/pull/19884) 
+  - [Use new state-based overloads where possible to avoid closures](https://github.com/Azure/azure-sdk-for-net/pull/19884) 
   - [TrackPublishHandlerAsActiveAsync closure and synchronous invocation hint](https://github.com/Azure/azure-sdk-for-net/pull/26986/files)
   - [NServiceBUs v8 Pipeline Optimizations](https://github.com/Particular/NServiceBus/pull/6237)
 - Enumerations and LINQ
