@@ -24,7 +24,7 @@ A good way to explore what scale means is to discover the assumptions that have 
 
 ## General rules of thumb
 
-- Avoid excessive allocations to avoid the GC overhead
+- Avoid excessive allocations to reduce the GC overhead
   - Be aware of closure allocations
   - Be aware of parameter overloads
   - Where possible and feasible use value types but pay attention to unnecessary boxing
@@ -38,7 +38,7 @@ A good way to explore what scale means is to discover the assumptions that have 
 Quick sample of Azure Service Bus SDK
 Explain the layering
 
-## Avoid excessive allocations
+## Avoid excessive allocations to reduce the GC overhead
 
 ### Think twice before using LINQ or unnecessary enumeration on the hot path
 
@@ -441,6 +441,49 @@ To demonstrate how these can add up in real-world scenarios, let me show you a b
 ![](benchmarks/NServiceBusPipelineExecution.png)
 
 But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) for Rider for example can also help to discover these types of issues while writing or refactoring code. 
+
+### Pool and re-use buffers (and larger objects)
+
+Azure Service Bus uses the concept lock tokens (a glorified GUID) in certain modes to ackknowledge messages. For messages loaded by the client there is a this lock token that needs to be turned into a GUID representation. The existing code looked like the following:
+
+```csharp
+// somewhere from the network we get a guid as a byte array
+var data = new ArraySegment<byte>(Guid.NewGuid().ToByteArray());
+```
+
+```csharp
+var guidBuffer = new byte[16];
+Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
+var lockTokenGuid = new Guid(guidBuffer);
+```
+
+For every message received a new byte array of length 16 is allocated on the heap and then the value of the ArraySegment is copied into the buffer. The buffer is then passed to the Guid constructor. When receiving lots of messages this creates a lot of unnecessary allocations.
+
+.NET has a built in mechanism called `ArrayPool<T>` that allows to have pooled arrays that can be reused. Let's see if we can use that one to improve the performance characteristics of the code.
+
+```csharp
+byte[] guidBuffer =  ArrayPool<byte>.Shared.Rent(16);
+Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
+var lockTokenGuid = new Guid(guidBuffer);
+ArrayPool<byte>.Shared.Return(guidBuffer);
+```
+
+Let's measure how we did.
+
+![](/benchmarks/BufferAndBlockCopyPooling.png)
+
+It turns out while we are saving allocations now we haven't really made things much better overall since the code now takes more than double the time to execute. It might very well be that this is an acceptable tradeoff for library or framework you are building. That being said we can do better. ArrayPool isn't the best usage for smaller arrays. For arrays to an certain threshold it is faster to allocate on the current method stack directly instead of paying the price of renting and return an array.
+
+```csharp
+Span<byte> guidBytes = stackalloc byte[16];
+data.AsSpan().CopyTo(guidBytes);
+var lockTokenGuid = new Guid(guidBytes);
+```
+
+
+## Avoid unnecessary copying of memory
+
+TBD
 
 ## Interesting Pullrequests
 
