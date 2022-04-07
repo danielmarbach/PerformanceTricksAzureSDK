@@ -440,7 +440,21 @@ To demonstrate how these can add up in real-world scenarios, let me show you a b
 
 ![](benchmarks/NServiceBusPipelineExecution.png)
 
-But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) for Rider for example can also help to discover these types of issues while writing or refactoring code. 
+But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) for Rider for example can also help to discover these types of issues while writing or refactoring code. Many built-in .NET types that use delegates have nowadays generic overloads that allow to pass state into the delegate. For example `ConcurrentDictionary` has `public TValue GetOrAdd<TArg> (TKey key, Func<TKey,TArg,TValue> valueFactory, TArg factoryArgument);` which allows to pass external state into the lambda. When you need to access multiple state parameters inside the `GetOrAdd` method you can use `ValueTuple` to pass the state into it.
+
+```csharp
+var someState1 = new object();
+var someOtherState = 42;
+
+var dictionary = new ConcurrentDictionary<string, string>();
+
+dictionary.GetOrAdd("SomeKey", static (key, state) => 
+{
+    var (someState, someOtherState) = state;
+
+    return $"{someState}_{someOtherState}";
+}, (someState1, someOtherState));
+```
 
 ### Pool and re-use buffers (and larger objects)
 
@@ -480,10 +494,19 @@ data.AsSpan().CopyTo(guidBytes);
 var lockTokenGuid = new Guid(guidBytes);
 ```
 
+With the introduction of `Span<T>` and the `stackalloc` keyword we can directly allocate the memory on the method's stack that is cleared when the method returns. 
+
+![](/benchmarks/StackallocWithGuid.png.png)
+
+## Parameter overloads and boxing
+
+Should I add this?
 
 ## Avoid unnecessary copying of memory
 
-TBD
+Show https://github.com/Azure/azure-sdk-for-net/pull/11255/files
+and
+https://github.com/Azure/azure-sdk-for-net/pull/27598/files
 
 ## Interesting Pullrequests
 
@@ -515,3 +538,4 @@ TBD
 - [Konrad Kokosa - High-performance code design patterns in C#](https://prodotnetmemory.com/slides/PerformancePatternsLong)
 - [David Fowler - Implementation details matter](https://speakerdeck.com/davidfowl/implementation-details-matter)
 - [Reuben Bond - Performance Tuning for .NET Core](https://reubenbond.github.io/posts/dotnet-perf-tuning)
+- [stackalloc expression](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/stackalloc)

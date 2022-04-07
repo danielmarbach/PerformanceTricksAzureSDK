@@ -74,4 +74,17 @@ public class GuidConversion
         }
         return lockTokenGuid;
     }
+
+    [Benchmark]
+    [SkipLocalsInit]
+    public Guid StackallocWithMemoryMarshalAndLocalsInit()
+    {
+        Span<byte> guidBytes = stackalloc byte[16];
+        data.AsSpan().CopyTo(guidBytes);
+        if (!MemoryMarshal.TryRead<Guid>(guidBytes, out var lockTokenGuid))
+        {
+            lockTokenGuid = new Guid(guidBytes.ToArray());
+        }
+        return lockTokenGuid;
+    }
 }
