@@ -500,7 +500,52 @@ With the introduction of `Span<T>` and the `stackalloc` keyword we can directly 
 
 ## Parameter overloads and boxing
 
-Should I add this?
+Some methods have parameter overloads of type `params object[]`. That can lead to some sneaky and costly array allocations that you might not even be aware of. With never incarnations of .NET there have been a number of improvements done on that area by introducing new method overloads for common cases that don't require to allocate a parameter array. For example instead of using
+
+```csharp
+public static Task<Task> WhenAny (params Task[] tasks);
+```
+
+the .NET team found out the most common cases is `Task.WhenAny(new[] { task1, task2 })`. So new there is a new overload
+
+```csharp
+public static Task<Task> WhenAny (Task task1, Task task2);
+```
+
+that doesn't allocate the array anymore. Or `CancellationTokenSource.CreateLinkedTokenSource`
+
+```csharp
+public static CancellationTokenSource CreateLinkedTokenSource (params CancellationToken[] tokens);
+```
+
+vs
+
+```csharp
+public static CancellationTokenSource CreateLinkedTokenSource (CancellationToken token1, CancellationToken token2);
+```
+
+A common mistake that can create lots and lots of unnecessary allocation and boxing is when you are writing custom event sources for your library or framework. EventSources are usually following this pattern:
+
+```csharp
+public class BlobEventStoreEventSource : EventSource 
+{
+    [Event(22, Level = EventLevel.Verbose, Message = "Completed listing ownership for FullyQualifiedNamespace: '{0}'; EventHubName: '{1}'; ConsumerGroup: '{2}'.  There were {3} ownership entries were found.")]
+    public virtual void ListOwnershipComplete(string fullyQualifiedNamespace,
+                                              string eventHubName,
+                                              string consumerGroup,
+                                              int ownershipCount)
+    {
+        if (IsEnabled())
+        {
+            WriteEvent(22, fullyQualifiedNamespace ?? string.Empty, eventHubName ?? string.Empty, consumerGroup ?? string.Empty, ownershipCount);
+        }
+    }
+}
+```
+
+Unfortunately by default the `WriteEvent` method supports only a few parameters before it falls back to using `WriteEvent(Int32, Object[])`. When that happens we are not only allocating an object array per call, but also any value type that is passed to that method is boxed and therefore allocates. For example in the above snippets the `ownershipCount` integer would be boxed into `object`. Especially considering that EventSources are supposed to be turned on in production and therefore need to tolerate high throughput this can quickly become problematic. Luckily there is a special overload of [`WriteEventCore`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventsource.writeeventcore).
+
+TBD
 
 ## Avoid unnecessary copying of memory
 
@@ -529,6 +574,8 @@ public static ServiceBusMessage CreateFrom(ServiceBusReceivedMessage message)
 ```
 
 with the Azure service Bus library the message body is represented as `BinaryData` which already contains a materialized block of memory that is treated as readonly. There is no need to copy that and we can get rid of this whole code by simply assigning `message.Body` to the new message.
+
+![](benchmarks/ArrayCopy.png)
 
 Other times memory copying isn't so obvious or requires a deep understand of what is happening under the hoods of the framework, library or SDK in use.
 
