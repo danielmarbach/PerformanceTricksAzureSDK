@@ -504,8 +504,34 @@ Should I add this?
 
 ## Avoid unnecessary copying of memory
 
-Show https://github.com/Azure/azure-sdk-for-net/pull/11255/files
-and
+I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also with the `in` paramater modifiers and `readonly struct` we can minimize the amount of copying required when operating various chunks of memory. `Span<T>` is a value type that enables the representation of contiguous regions of arbitrary memory, regardless of whether that memory is associated with a managed object, is provided by native code via interop, or is on the stack. Interally it is a pointer to a memory location and a length to represent the length of the memory represented by the span. One of the other benefits `Span<T>` provides that that because it can be "sliced" into various chunks you can represent various slices of memory of variable length without having to copy the memory. `Span<T>` can only live on the stack while its cousin `Memory<T>` can live on the heap and therefore be used in async methods for example.
+
+Sometimes memory copying is quite obvious to spot in code. For example the Azure Service Bus SDK had a factory method that allows to create an outgoing message from an incoming message
+
+```csharp
+
+public class ServiceBusReceivedMessage
+{
+    public BinaryData Body { get; }
+}
+
+public static ServiceBusMessage CreateFrom(ServiceBusReceivedMessage message)
+{
+    //...
+    var originalBody = message.Body;
+    if (!originalBody.IsEmpty)
+    {
+        var clonedBody = new byte[originalBody.Length];
+        Array.Copy(originalBody.ToArray(), clonedBody, originalBody.Length);
+        copiedMessage.Body = clonedBody;
+    }
+}
+```
+
+with the Azure service Bus library the message body is represented as `BinaryData` which already contains a materialized block of memory that is treated as readonly. There is no need to copy that and we can get rid of this whole code by simply assigning `message.Body` to the new message.
+
+Other times memory copying isn't so obvious or requires a deep understand of what is happening under the hoods of the framework, library or SDK in use.
+
 https://github.com/Azure/azure-sdk-for-net/pull/27598/files
 
 ## Interesting Pullrequests
@@ -539,3 +565,4 @@ https://github.com/Azure/azure-sdk-for-net/pull/27598/files
 - [David Fowler - Implementation details matter](https://speakerdeck.com/davidfowl/implementation-details-matter)
 - [Reuben Bond - Performance Tuning for .NET Core](https://reubenbond.github.io/posts/dotnet-perf-tuning)
 - [stackalloc expression](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/stackalloc)
+- [All About Span: Exploring a New .NET Mainstay](https://docs.microsoft.com/en-us/archive/msdn-magazine/2018/january/csharp-all-about-span-exploring-a-new-net-mainstay)
