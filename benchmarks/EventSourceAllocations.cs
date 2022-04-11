@@ -16,8 +16,9 @@ public class EventSourceAllocations
         public Config()
         {
             AddExporter(MarkdownExporter.GitHub);
-            AddDiagnoser(MemoryDiagnoser.Default);
-            AddJob(Job.Default);
+            //AddDiagnoser(MemoryDiagnoser.Default);
+
+            AddJob(Job.ShortRun);
         }
     }
 
@@ -36,7 +37,7 @@ public class EventSourceAllocations
     [Benchmark]
     public void NoParamsNoBoxing()
     {
-SomeEventSource.Log.ListOwnershipCompleteImproved("fullyQualifiedNamespace", "eventHubName", "consumerGroup", 42);
+        SomeEventSource.Log.ListOwnershipCompleteImproved("fullyQualifiedNamespace", "eventHubName", "consumerGroup", 42);
     }
 }
 
@@ -82,37 +83,41 @@ class SomeEventSource : EventSource
     {
         if (IsEnabled())
         {
-            WriteEventImproved(23, fullyQualifiedNamespace ?? string.Empty, eventHubName ?? string.Empty, consumerGroup ?? string.Empty, ownershipCount);
+            WriteEventImproved(23, fullyQualifiedNamespace, eventHubName, consumerGroup ?? string.Empty, ownershipCount);
         }
     }
 
     [NonEvent]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
-    private unsafe void WriteEventImproved<TValue1>(int eventId,
-                                                    string arg1,
-                                                    string arg2,
-                                                    string arg3,
-                                                    TValue1 arg4)
-        where TValue1 : struct
+    private unsafe void WriteEventImproved<TValue>(int eventId,
+                                                  string arg1,
+                                                  string arg2,
+                                                  string arg3,
+                                                  TValue arg4)
+        where TValue : struct
     {
+        arg1 ??= "";
+        arg2 ??= "";
+        arg3 ??= "";
+
         fixed (char* arg1Ptr = arg1)
         fixed (char* arg2Ptr = arg2)
         fixed (char* arg3Ptr = arg3)
         {
-            var eventPayload = stackalloc EventData[4];
+            EventData* eventPayload = stackalloc EventData[4];
 
-            eventPayload[0].Size = (arg1.Length + 1) * sizeof(char);
             eventPayload[0].DataPointer = (IntPtr)arg1Ptr;
+            eventPayload[0].Size = checked(arg1.Length + 1) * sizeof(char);
 
-            eventPayload[1].Size = (arg2.Length + 1) * sizeof(char);
             eventPayload[1].DataPointer = (IntPtr)arg2Ptr;
+            eventPayload[1].Size = checked(arg2.Length + 1) * sizeof(char);
 
-            eventPayload[2].Size = (arg3.Length + 1) * sizeof(char);
             eventPayload[2].DataPointer = (IntPtr)arg3Ptr;
+            eventPayload[2].Size = checked(arg3.Length + 1) * sizeof(char);
 
-            eventPayload[3].Size = Unsafe.SizeOf<TValue1>();
             eventPayload[3].DataPointer = (IntPtr)Unsafe.AsPointer(ref arg4);
+            eventPayload[3].Size = Unsafe.SizeOf<TValue>();
 
             WriteEventCore(eventId, 4, eventPayload);
         }

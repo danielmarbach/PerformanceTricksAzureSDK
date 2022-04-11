@@ -545,7 +545,45 @@ public class BlobEventStoreEventSource : EventSource
 
 Unfortunately by default the `WriteEvent` method supports only a few parameters before it falls back to using `WriteEvent(Int32, Object[])`. When that happens we are not only allocating an object array per call, but also any value type that is passed to that method is boxed and therefore allocates. For example in the above snippets the `ownershipCount` integer would be boxed into `object`. Especially considering that EventSources are supposed to be turned on in production and therefore need to tolerate high throughput this can quickly become problematic. Luckily there is a special overload of [`WriteEventCore`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventsource.writeeventcore).
 
-TBD
+```csharp
+[NonEvent]
+[MethodImpl(MethodImplOptions.AggressiveInlining)]
+[SkipLocalsInit]
+private unsafe void WriteEventImproved<TValue>(int eventId,
+                                               string arg1,
+                                               string arg2,
+                                               string arg3,
+                                               TValue arg4)
+    where TValue : struct
+{
+    arg1 ??= "";
+    arg2 ??= "";
+    arg3 ??= "";
+
+    fixed (char* arg1Ptr = arg1)
+    fixed (char* arg2Ptr = arg2)
+    fixed (char* arg3Ptr = arg3)
+    {
+        EventData* eventPayload = stackalloc EventData[4];
+
+        eventPayload[0].DataPointer = (IntPtr)arg1Ptr;
+        eventPayload[0].Size = checked(arg1.Length + 1) * sizeof(char);
+
+        eventPayload[1].DataPointer = (IntPtr)arg2Ptr;
+        eventPayload[1].Size = checked(arg2.Length + 1) * sizeof(char);
+
+        eventPayload[2].DataPointer = (IntPtr)arg3Ptr;
+        eventPayload[2].Size = checked(arg3.Length + 1) * sizeof(char);
+
+        eventPayload[3].DataPointer = (IntPtr)Unsafe.AsPointer(ref arg4);
+        eventPayload[3].Size = Unsafe.SizeOf<TValue>();
+
+        WriteEventCore(eventId, 4, eventPayload);
+    }
+}
+```
+
+![](benchmarks/EventSourceParamsAndBoxing.png)
 
 ## Avoid unnecessary copying of memory
 
