@@ -619,6 +619,90 @@ Other times memory copying isn't so obvious or requires a deep understand of wha
 
 https://github.com/Azure/azure-sdk-for-net/pull/27598/files
 
+```csharp
+private static short GenerateHashCode(string partitionKey)
+{
+    if (partitionKey == null)
+    {
+        return 0;
+    }
+
+    ComputeHash(Encoding.UTF8.GetBytes(partitionKey), seed1: 0, seed2: 0, out uint hash1, out uint hash2);
+    return (short)(hash1 ^ hash2);
+}
+
+private static void ComputeHash(byte[] data,
+                                uint seed1,
+                                uint seed2,
+                                out uint hash1,
+                                out uint hash2)
+{
+    uint a, b, c;
+
+    a = b = c = (uint)(0xdeadbeef + data.Length + seed1);
+    c += seed2;
+
+    int index = 0, size = data.Length;
+    while (size > 12)
+    {
+        a += BitConverter.ToUInt32(data, index);
+        b += BitConverter.ToUInt32(data, index + 4);
+        c += BitConverter.ToUInt32(data, index + 8);
+
+    // rest omitted
+}
+
+```csharp
+[SkipLocalsInit]
+private static short GenerateHashCode(string partitionKey)
+{
+    if (partitionKey == null)
+    {
+        return 0;
+    }
+
+    const int MaxStackLimit = 256;
+
+    byte[] sharedBuffer = null;
+    var partitionKeySpan = partitionKey.AsSpan();
+    var encoding = Encoding.UTF8;
+
+    var partitionKeyByteLength = encoding.GetMaxByteCount(partitionKey.Length);
+    var hashBuffer = partitionKeyByteLength <= MaxStackLimit ?
+        stackalloc byte[MaxStackLimit] :
+        sharedBuffer = ArrayPool<byte>.Shared.Rent(partitionKeyByteLength);
+
+    var written = encoding.GetBytes(partitionKeySpan, hashBuffer);
+    ComputeHash(hashBuffer.Slice(0, written), seed1: 0, seed2: 0, out uint hash1, out uint hash2);
+    if (sharedBuffer != null)
+    {
+        ArrayPool<byte>.Shared.Return(sharedBuffer);
+    }
+    return (short)(hash1 ^ hash2);
+}
+
+private static void ComputeHash(ReadOnlySpan<byte> data,
+                                uint seed1,
+                                uint seed2,
+                                out uint hash1,
+                                out uint hash2)
+{
+    uint a, b, c;
+
+    a = b = c = (uint)(0xdeadbeef + data.Length + seed1);
+    c += seed2;
+
+    int index = 0, size = data.Length;
+    while (size > 12)
+    {
+        a += BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(index));
+        b += BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(index + 4));
+        c += BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(index + 8));
+
+    // rest omitted
+}
+```
+
 ## Interesting Pullrequests
 
 - Do not copy unnecessary
