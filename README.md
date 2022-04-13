@@ -37,6 +37,7 @@ A good way to explore what scale means is to discover the assumptions that have 
 
 Quick sample of Azure Service Bus SDK
 Explain the layering
+Is this necessary?
 
 ## Avoid excessive allocations to reduce the GC overhead
 
@@ -617,7 +618,7 @@ with the Azure service Bus library the message body is represented as `BinaryDat
 
 Other times memory copying isn't so obvious or requires a deep understand of what is happening under the hoods of the framework, library or SDK in use.
 
-https://github.com/Azure/azure-sdk-for-net/pull/27598/files
+The EventHubs client has recently introduced a new publisher type that uses internally a partition key resolver that turns string partition keys into hash codes. 30-40% of the hot path will be using partition keys when publishing and therefore represents a non-trivial amount of CPU and memory cycles when using that publisher type. The hash code function looked like the following.
 
 ```csharp
 private static short GenerateHashCode(string partitionKey)
@@ -651,6 +652,9 @@ private static void ComputeHash(byte[] data,
 
     // rest omitted
 }
+```
+
+It is pretty conventien that encoding classes allow to turn any arbitrary string into a byte array representation of that string. Unfortunately it also allocates quite a bit of memory and that overall when put into perspective can contribute to significant Gen0 garbage. Because the hash code function accepts arbitrary strings we cannot assume a fixed upper bound for the partition key length. But it is possible to combine the knowledge we learned.
 
 ```csharp
 [SkipLocalsInit]
@@ -680,7 +684,21 @@ private static short GenerateHashCode(string partitionKey)
     }
     return (short)(hash1 ^ hash2);
 }
+```
 
+Instead of operating on the string directly we turn the string into a span. From that span we get the maximum byte count from the encoding. This is more efficient than asking for the actual byte length of the string because it has O(1) semantics and doesn't traverse the whole string. When the byte count is lower then a fixed memory size we stackalloc a byte array of the maximum memory size because that is cheaper when clearing the array when the method stack is cleared. It is only cheaper when combined with `[SkipLocalsInit]` attribute which makes sure the compiler doesn't emit the localsinit instruction. Without that instruction the whole array doesn't need to be cleared when the memory is allocated.
+
+In cases when the byte length is longer than the maximum defined stack limit a regular byte array is rented from the ArrayPool. The allocated buffer is then passed to the encoding and then sliced before passing to the `ComputeHash` method into the corresponding memory area that was actually used. At the end the when a buffer was pooled it is returned to the pool without clearing since the partition keys are not considered sensitive data.
+
+While doing the work I have also discovered a bug in the original algorithm. The algorithm is using `BitConverter` to convert parts of the array into a `uint`. And this has problems... Can anyone spot it?
+
+Well for a hash function we want to get the same hash regardless of the underlying system architecture. But BitConverter has the following behavior:
+
+> method depends on whether the computer architecture is little-endian or big-endian. The endianness of an architecture is indicated by the `IsLittleEndian` property, which returns true on little-endian systems and false on big-endian systems. On little-endian systems, lower-order bytes precede higher-order bytes. On big-endian system, higher-order bytes precede lower-order bytes. [doc](https://docs.microsoft.com/en-us/dotnet/api/system.bitconverter)
+
+So the hash function would return different values for the same input depending on the endianness of the architecture... Luckily this piece of code wasn't released yet. So now it uses `BinaryPrimitives` to always read with consistent endianness.
+
+```csharp
 private static void ComputeHash(ReadOnlySpan<byte> data,
                                 uint seed1,
                                 uint seed2,
@@ -695,9 +713,9 @@ private static void ComputeHash(ReadOnlySpan<byte> data,
     int index = 0, size = data.Length;
     while (size > 12)
     {
-        a += BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(index));
-        b += BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(index + 4));
-        c += BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(index + 8));
+        a += BinaryPrimitives.ReadUInt32LittleEndian(data[index..]);
+        b += BinaryPrimitives.ReadUInt32LittleEndian(data[(index + 4)..]);
+        c += BinaryPrimitives.ReadUInt32LittleEndian(data[(index + 8)..]);
 
     // rest omitted
 }
@@ -735,3 +753,4 @@ private static void ComputeHash(ReadOnlySpan<byte> data,
 - [Reuben Bond - Performance Tuning for .NET Core](https://reubenbond.github.io/posts/dotnet-perf-tuning)
 - [stackalloc expression](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/stackalloc)
 - [All About Span: Exploring a New .NET Mainstay](https://docs.microsoft.com/en-us/archive/msdn-magazine/2018/january/csharp-all-about-span-exploring-a-new-net-mainstay)
+- [stackalloc docs should discuss performance benefit of constant size](https://github.com/dotnet/docs/issues/28823)
