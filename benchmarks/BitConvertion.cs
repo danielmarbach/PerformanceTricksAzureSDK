@@ -3,7 +3,6 @@ using System.Buffers.Binary;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Jobs;
 
@@ -17,8 +16,7 @@ public class BitConvertion
         public Config()
         {
             AddExporter(MarkdownExporter.GitHub);
-            AddDiagnoser(MemoryDiagnoser.Default);
-            AddJob(Job.Default.WithUnrollFactor(1024));
+            AddJob(Job.Default);
         }
     }
 
@@ -37,6 +35,7 @@ public class BitConvertion
     [Benchmark]
     public uint BinaryPrimitivesRead()
     {
-        return BinaryPrimitives.ReadUInt32LittleEndian(originalBody.AsSpan().Slice(3));
+        ReadOnlySpan<byte> body = originalBody.AsSpan();
+        return BinaryPrimitives.ReadUInt32LittleEndian(body[3..]);
     }
 }
