@@ -721,6 +721,8 @@ private static void ComputeHash(ReadOnlySpan<byte> data,
 }
 ```
 
+![](/benchmarks/PartitionKeyResolver.png)
+
 ## Interesting Pullrequests
 
 - Do not copy unnecessary
