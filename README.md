@@ -1,6 +1,5 @@
 # Performance tricks I learned from contributing to the Azure .NET SDK
 
-
 As a practical learner, I've found that performance optimizations have been my biggest challenge and the place I've learned the tricks that are the most helpful. These lessons have come by trial and error. As it turns out, the Azure .NET SDK was a perfect “playground” for learning new tricks because it's maintained by people who care and give feedback. 
 
 Over the past few years, I've contributed over fifty pull requests to the Azure .NET SDK and some of them got accepted. In this session, I'll walk you through the performance improvements I learned from my experiments. Some “superpowers” you will learn are spotting closure allocations and opportunities for memory pooling and, best of all, how to improve them. 
@@ -12,6 +11,8 @@ Over the past few years, I've contributed over fifty pull requests to the Azure 
 ## Caveats
 
 In this talk, I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. The focus is purely on code with examples in CSharp. Some optimizations shown here can be seen as esoteric in typical line of business applications, and I wouldn't recommend jumping to conclusions and applying those everywhere. It is important to note that for code that is executed under scale, optimizations on code can bring a lot of benefit to the table due to not only being fast but also being more efficient in resource usage, execution time, throughput and memory usage.
+
+> Mauro: I'd add that there needs to be balance between maintenabililty, readability and code performance
 
 But what does at scale even mean? How can I find out whether the optimizations I'm trying to make have value, and I'm not getting called out by my colleagues for premature optimizations?
 
@@ -39,6 +40,8 @@ A good way to explore what scale means is to discover the assumptions that have 
 Quick sample of Azure Service Bus SDK
 Explain the layering
 Is this necessary?
+
+> Why do you need to talk about the Azure SDK?
 
 ## Avoid excessive allocations to reduce the GC overhead
 
@@ -259,6 +262,10 @@ public List<SomeClass> ListForReturnListFor()
 ![](benchmarks/CollectionComparison.png)
 
 Now we are really getting in weird territory. Arguably, optimizing things at the level of `foreach` vs `for` can be considered to be too crazy and esoteric. Like with all things, it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial. For example, if you are trying to optimize something that uses `IEnumerable` that is passed based on the user input like as for the `AmqReceiver` by applying the rules above you might turn this piece of code:
+
+>> it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize
+>
+> Why not going all-in?
 
 ```csharp
 public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
@@ -590,6 +597,8 @@ private unsafe void WriteEventImproved<TValue>(int eventId,
 ## Avoid unnecessary copying of memory
 
 I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also with the `in` paramater modifiers and `readonly struct` we can minimize the amount of copying required when operating various chunks of memory. `Span<T>` is a value type that enables the representation of contiguous regions of arbitrary memory, regardless of whether that memory is associated with a managed object, is provided by native code via interop, or is on the stack. Interally it is a pointer to a memory location and a length to represent the length of the memory represented by the span. One of the other benefits `Span<T>` provides that that because it can be "sliced" into various chunks you can represent various slices of memory of variable length without having to copy the memory. `Span<T>` can only live on the stack while its cousin `Memory<T>` can live on the heap and therefore be used in async methods for example.
+
+> I understood, but overall you lost me at this point. Is this too much? 
 
 Sometimes memory copying is quite obvious to spot in code. For example the Azure Service Bus SDK had a factory method that allows to create an outgoing message from an incoming message
 
