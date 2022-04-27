@@ -33,12 +33,6 @@ A good way to explore what scale means is to discover the assumptions that have 
   - For smaller local buffers, consider using the stack
 - Avoid unnecessary copying of memory
 
-## Brief overview over the terminologies used
-
-Quick sample of Azure Service Bus SDK
-Explain the layering
-Is this necessary?
-
 ## Avoid excessive allocations to reduce the GC overhead
 
 ### Think twice before using LINQ or unnecessary enumeration on the hot path
