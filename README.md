@@ -4,13 +4,11 @@ As a practical learner, I've found that performance optimizations have been my b
 
 Over the past few years, I've contributed over fifty pull requests to the Azure .NET SDK and some of them got accepted. In this session, I'll walk you through the performance improvements I learned from my experiments. Some “superpowers” you will learn are spotting closure allocations and opportunities for memory pooling and, best of all, how to improve them. 
 
-## Outline
+## Introduction
 
-.NET has been evolving over the years into a modern and high-performance platform. The languages running on .NET have also been improving and allowing to fall to lower levels without giving up on the safety guarantees too much or only where it is really needed. It is less and less needed to use unmanaged languages like C/C++ to achieve code that performs well at scale.
+In this talk, I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. The focus is purely on code with examples in CSharp. .NET has been evolving over the years into a modern and high-performance platform. The languages running on .NET have also been improving and allowing to fall to lower levels without giving up on the safety guarantees too much or only where it is really needed. It is less and less needed to use unmanaged languages like C/C++ to achieve code that performs well at scale.
 
-## Caveats
-
-In this talk, I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. The focus is purely on code with examples in CSharp. Some optimizations shown here can be seen as esoteric in typical line of business applications, and I wouldn't recommend jumping to conclusions and applying those everywhere. It is important to note that for code that is executed under scale, optimizations on code can bring a lot of benefit to the table due to not only being fast but also being more efficient in resource usage, execution time, throughput and memory usage.
+Some optimizations shown here can be seen as esoteric in typical line of business applications, and I wouldn't recommend jumping to conclusions and applying those everywhere. It is important to note that for code that is executed under scale, optimizations on code can bring a lot of benefit to the table due to not only being fast but also being more efficient in resource usage, execution time, throughput and memory usage.
 
 But what does at scale even mean? How can I find out whether the optimizations I'm trying to make have value, and I'm not getting called out by my colleagues for premature optimizations?
 
@@ -18,7 +16,7 @@ But what does at scale even mean? How can I find out whether the optimizations I
 
 I've heard countless times already: "Wow, that's crazy, is the complexity of this change really worth it? Isn't that premature optimization?" While it is true that performance improvements can be addictive, it is also true that nobody likes to optimize code that is "fast enough" or is only executed a few times a day as a background job. 
 
-David Fowler: Scale for an application can mean the number of users that will concurrently connect to the application at any given time, the amount of input to process (for example the size of the data) or the number of times data needs to be processed (for example the number of requests per second). For us, as engineers, it means we have to know what to ignore and knowing what to pay close attention to.
+> David Fowler: Scale for an application can mean the number of users that will concurrently connect to the application at any given time, the amount of input to process (for example the size of the data) or the number of times data needs to be processed (for example the number of requests per second). For us, as engineers, it means we have to know what to ignore and knowing what to pay close attention to.
 
 A good way to explore what scale means is to discover the assumptions that have accumulated over time in a given code base by paying close attention to what is instantiated, parsed, processed etc. per request and how those assumptions in the code base affect the performance characteristics (memory, throughput...) at scale.
 
@@ -40,17 +38,16 @@ A good way to explore what scale means is to discover the assumptions that have 
 LINQ is great, and I wouldn't want to miss it at all. Yet, on the hot path it is far too easy to get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT to optimize. Let's look at a piece of code from the `AmqpReceiver`
 
 ```csharp
-
 public class AmqpReceiver 
 {
-    ConcurrentBag<Guid> _requestResponseLockedMessages = new ();
+    ConcurrentBag<Guid> _lockedMessages = new ();
     
     public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
     
     private Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
     {
         Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
-        if (lockTokenGuids.Any(lockToken => _requestResponseLockedMessages.Contains(lockToken))) 
+        if (lockTokenGuids.Any(lockToken => _lockedMessages.Contains(lockToken))) 
         {
           // do special path accessing lockTokenGuids
           return Task.CompletedTask;
@@ -91,12 +88,12 @@ public class AmqpReceiver
     [CompilerGenerated]
     private bool <CompleteInternalAsync>b__2_1(Guid lockToken)
     {
-        return Enumerable.Contains(_requestResponseLockedMessages, lockToken);
+        return Enumerable.Contains(_lockedMessages, lockToken);
     }
 }
 ```
 
-For every call of CompleteInternalAsync a new instance of `Func<Guid, bool>` is allocated that points to `<CompleteInternalAsync>b__2_1`. A closure captures the `_requestResponseLockedMessages` and the `lockToken` as state. This allocation is unnecessary. 
+For every call of CompleteInternalAsync a new instance of `Func<Guid, bool>` is allocated that points to `<CompleteInternalAsync>b__2_1`. A closure captures the `_lockedMessages` and the `lockToken` as state. This allocation is unnecessary. 
 
 ```csharp
     public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);

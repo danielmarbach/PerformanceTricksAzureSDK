@@ -30,7 +30,6 @@
 		<div class="reveal">
 			<div class="slides">
 				<section>
-
 					<h3 style="text-transform: uppercase;animation: glow 2s ease-in-out infinite alternate;text-align: center;">Performance tricks</h3>
 					<p><div>from contributing to the</div><a href="https://github.com/Azure/azure-sdk-for-net">
 						<img src="https://azure.github.io/azure-sdk-for-net/logo.svg" alt="Azure SDK logo" style="width: 300px; margin: 0 auto 1rem auto; text-align:left; background: transparent;filter: invert(34%) sepia(86%) saturate(1173%) hue-rotate(174deg) brightness(98%) contrast(101%);">
@@ -39,6 +38,90 @@
 						<small>by <a href="https://twitter.com/danielmarbach">Daniel Marbach</a></small>
 					</p>
 				</section>
+				<section data-background="img/architecture-g104d6d62d_1280.jpg">
+					<div style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+						<h2>Introduction</h2>
+						<p>Focus on performance optimization in .NET Code and not architecture.</p>
+					</div>
+					<aside class="notes">
+						<ul>
+							<li>Not about horizontal and vertical scaling</li>
+							<li>C/C++ is less and less needed</li>
+						</ul>
+					</aside>
+				</section>
+				<section data-background="img/tarot-g4ac5fb817_1280.jpg">
+					<div style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+						<h2>Esoteric</h2>
+						<p>Being called out for premature optimizations.</p>
+					</div>
+					<aside class="notes">
+						<ul>
+							<li>Don't jump to conclusions and apply them blindly.</li>
+							<li>Code executed under scale it matters: More efficient in resource usage, execution time, throughput and memory usage</li>
+							<li>But what does at scale even mean? How can I find out whether the optimizations I'm trying to make have value, and I'm not getting called out by my colleagues for premature optimizations?</li>
+						</ul>
+					</aside>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="8|10|11" data-trim data-noescape><script type="text/template">
+						public class AmqpReceiver {
+							
+							ConcurrentBag<Guid> _lockedMessages = new ();
+							
+							public Task CompleteAsync(IEnumerable<string> lockTokens) 
+								=> CompleteInternalAsync(lockTokens);
+							
+							Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+							{
+								Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
+								if (lockTokenGuids.Any(lockToken => _lockedMessages.Contains(lockToken))) 
+								{
+								  // do special path accessing lockTokenGuids
+								  return Task.CompletedTask;
+								}
+								// do normal path accessing lockTokenGuids
+								return Task.CompletedTask;
+							}
+						}
+					</script></code></pre>
+				  </section>
+				  <section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="23,27-31" data-trim data-noescape><script type="text/template">
+						public class AmqpReceiver {
+							[Serializable]
+							[CompilerGenerated]
+							private sealed class <>c
+							{
+								public static readonly <>c <>9 = new <>c();
+						
+								public static Func<string, Guid> <>9__2_0;
+						
+								internal Guid <CompleteInternalAsync>b__2_0(string token)
+								{
+									return new Guid(token);
+								}
+						
+							}
+						
+							// omitted for brevity
+						
+							private Task CompleteInternalAsync(IEnumerable<string> lockTokens)
+							{
+								Enumerable.Any(Enumerable.ToArray(Enumerable.Select(lockTokens, <>c.<>9__2_0 ?? 
+									(<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0)))), 
+										new Func<Guid, bool>(<CompleteInternalAsync>b__2_1));
+								return Task.CompletedTask;
+							}
+						
+							[CompilerGenerated]
+							private bool <CompleteInternalAsync>b__2_1(Guid lockToken)
+							{
+								return Enumerable.Contains(_requestResponseLockedMessages, lockToken);
+							}
+						}
+					</script></code></pre>
+				  </section>
 			</div>
 		</div>
 
