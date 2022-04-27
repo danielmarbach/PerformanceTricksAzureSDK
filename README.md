@@ -26,7 +26,7 @@ A good way to explore what scale means is to discover the assumptions that have 
   - Be aware of closure allocations
   - Be aware of parameter overloads
   - Where possible and feasible use value types but pay attention to unnecessary boxing
-  - Think twice before using LINQ or unnecessary enumeration on the hot path
+  - Think at least twice before using LINQ or unnecessary enumeration on the hot path
   - Pool and re-use buffers
   - For smaller local buffers, consider using the stack
 - Avoid unnecessary copying of memory

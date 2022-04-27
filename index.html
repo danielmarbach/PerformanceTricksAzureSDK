@@ -1,45 +1,55 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>Performance tricks I learned from contributing to the Azure .NET SDK</title>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<meta name="description" content="As a practical learner, I've found that performance optimizations have been my biggest challenge and the place I've learned the tricks that are the most helpful. These lessons have come by trial and error. As it turns out, the Azure .NET SDK was a perfect “playground” for learning new tricks because it's maintained by people who care and give feedback. Over the past few years, I've contributed over fifty pull requests to the Azure .NET SDK and some of them got accepted. In this session, I'll walk you through the performance improvements I learned from my experiments. Some “superpowers” you will learn are spotting closure allocations and opportunities for memory pooling and, best of all, how to improve them.">
-		<meta name="author" content="Daniel Marbach">
+	<title>Performance tricks I learned from contributing to the Azure .NET SDK</title>
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css">
-		<style>
-			@keyframes glow {
-				from {
+	<meta name="description"
+		content="As a practical learner, I've found that performance optimizations have been my biggest challenge and the place I've learned the tricks that are the most helpful. These lessons have come by trial and error. As it turns out, the Azure .NET SDK was a perfect “playground” for learning new tricks because it's maintained by people who care and give feedback. Over the past few years, I've contributed over fifty pull requests to the Azure .NET SDK and some of them got accepted. In this session, I'll walk you through the performance improvements I learned from my experiments. Some “superpowers” you will learn are spotting closure allocations and opportunities for memory pooling and, best of all, how to improve them.">
+	<meta name="author" content="Daniel Marbach">
+
+	<link rel="stylesheet" href="dist/reset.css">
+	<link rel="stylesheet" href="dist/reveal.css">
+	<link rel="stylesheet" href="dist/theme/black.css">
+	<style>
+		@keyframes glow {
+			from {
 				text-shadow: 0 0 20px #0089d6;
-				}
-				to {
-				text-shadow: 0 0 30px #0089d6, 0 0 10px #0089d6;
-				}
 			}
-		</style>
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>
-					<h3 style="text-transform: uppercase;animation: glow 2s ease-in-out infinite alternate;text-align: center;">Performance tricks</h3>
-					<p><div>from contributing to the</div><a href="https://github.com/Azure/azure-sdk-for-net">
-						<img src="https://azure.github.io/azure-sdk-for-net/logo.svg" alt="Azure SDK logo" style="width: 300px; margin: 0 auto 1rem auto; text-align:left; background: transparent;filter: invert(34%) sepia(86%) saturate(1173%) hue-rotate(174deg) brightness(98%) contrast(101%);">
-					</a></p>
-					<p>
-						<small>by <a href="https://twitter.com/danielmarbach">Daniel Marbach</a></small>
-					</p>
-				</section>
+			to {
+				text-shadow: 0 0 30px #0089d6, 0 0 10px #0089d6;
+			}
+		}
+	</style>
+
+	<!-- Theme used for syntax highlighted code -->
+	<link rel="stylesheet" href="plugin/highlight/monokai.css">
+</head>
+
+<body>
+	<div class="reveal">
+		<div class="slides">
+			<section>
+				<h3
+					style="text-transform: uppercase;animation: glow 2s ease-in-out infinite alternate;text-align: center;">
+					Performance tricks</h3>
+				<p>
+				<div>from contributing to the</div><a href="https://github.com/Azure/azure-sdk-for-net">
+					<img src="https://azure.github.io/azure-sdk-for-net/logo.svg" alt="Azure SDK logo"
+						style="width: 300px; margin: 0 auto 1rem auto; text-align:left; background: transparent;filter: invert(34%) sepia(86%) saturate(1173%) hue-rotate(174deg) brightness(98%) contrast(101%);">
+				</a></p>
+				<p>
+					<small>by <a href="https://twitter.com/danielmarbach">Daniel Marbach</a></small>
+				</p>
+			</section>
+			<section>
 				<section data-background="img/architecture-g104d6d62d_1280.jpg">
-					<div style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+					<div
+						style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
 						<h2>Introduction</h2>
 						<p>Focus on performance optimization in .NET Code and not architecture.</p>
 					</div>
@@ -51,20 +61,76 @@
 					</aside>
 				</section>
 				<section data-background="img/tarot-g4ac5fb817_1280.jpg">
-					<div style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+					<div
+						style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
 						<h2>Esoteric</h2>
 						<p>Being called out for premature optimizations.</p>
 					</div>
 					<aside class="notes">
 						<ul>
 							<li>Don't jump to conclusions and apply them blindly.</li>
-							<li>Code executed under scale it matters: More efficient in resource usage, execution time, throughput and memory usage</li>
-							<li>But what does at scale even mean? How can I find out whether the optimizations I'm trying to make have value, and I'm not getting called out by my colleagues for premature optimizations?</li>
+							<li>Code executed under scale it matters: More efficient in resource usage, execution time,
+								throughput and memory usage</li>
+							<li>But what does at scale even mean? How can I find out whether the optimizations I'm
+								trying to make have value, and I'm not getting called out by my colleagues for premature
+								optimizations?</li>
 						</ul>
 					</aside>
 				</section>
-				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="8|10|11" data-trim data-noescape><script type="text/template">
+			</section>
+			<section data-background="img/animal-3346192_1280.jpg">
+				<div
+					style="left: 10; width: 35%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+					<h5>At Scale implementation details matter</h5>
+					<div style="font-style: italic;">
+						<p>&ldquo;Scale for an application can mean the number of users that will concurrently connect
+							to the application at any given time, the amount of input to process or the number of times
+							data needs to be processed.</p>
+						<p>For us, as engineers, it means we have to know <b>what to ignore</b> and knowing <b>what to
+								pay close attention to</b>.&rdquo; <a
+								href="https://speakerdeck.com/davidfowl/implementation-details-matter">David Fowler</a>
+						</p>
+					</div>
+				</div>
+				<aside class="notes">
+					<ul>
+						<li>Discover the assumptions that have accumulated over time</li>
+						<li>Pay close attention to what is instantiated, parsed, processed etc. per request</li>
+						<li>How those assumptions in the code base affect the performance characteristics (memory,
+							throughput...) at scale</li>
+					</ul>
+				</aside>
+			</section>
+			<section >
+				<section data-background-video="vids/Give-me-the-code-natalia.mp4">
+				</section>
+				<section data-auto-animate>
+					<ul>
+						<li data-id="allocations">Avoid excessive allocations to reduce the GC overhead</li>
+						<li data-id="copying">Avoid unnecessary copying of memory</li>
+					</ul>
+					<h2 class="r-fit-text" data-id="thumb">Rules of thumb</h2>
+				</section>
+				<section data-auto-animate>
+					<ul>
+						<li data-id="allocations">Avoid excessive allocations to reduce the GC overhead</li>
+						<ul>
+							<li class="fragment fade-in">Be aware of closure allocations</li>
+							<li class="fragment fade-in">Avoid unnecessary copying of memory</li>
+							<li class="fragment fade-in">Be aware of parameter overloads</li>
+							<li class="fragment fade-in">Where possible and feasible use value types <br />but pay
+								attention to unnecessary boxing</li>
+							<li class="fragment fade-in">Think at least twice before using LINQ <br /> or
+								unnecessary enumeration on the hot path</li>
+							<li class="fragment fade-in">Pool and re-use buffers</li>
+							<li class="fragment fade-in">For smaller local buffers, consider using the stack</li>
+						</ul>
+						<li data-id="copying">Avoid unnecessary copying of memory</li>
+					</ul>
+				</section>
+			</section>
+			<section>
+				<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="8|10|11" data-trim data-noescape><script type="text/template">
 						public class AmqpReceiver {
 							
 							ConcurrentBag<Guid> _lockedMessages = new ();
@@ -85,9 +151,9 @@
 							}
 						}
 					</script></code></pre>
-				  </section>
-				  <section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="23,27-31" data-trim data-noescape><script type="text/template">
+			</section>
+			<section>
+				<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="23,27-31" data-trim data-noescape><script type="text/template">
 						public class AmqpReceiver {
 							[Serializable]
 							[CompilerGenerated]
@@ -121,28 +187,29 @@
 							}
 						}
 					</script></code></pre>
-				  </section>
-			</div>
+			</section>
 		</div>
+	</div>
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/zoom/zoom.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/search/search.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				controls: true,
-				progress: true,
-				hash: true,
+	<script src="dist/reveal.js"></script>
+	<script src="plugin/zoom/zoom.js"></script>
+	<script src="plugin/notes/notes.js"></script>
+	<script src="plugin/search/search.js"></script>
+	<script src="plugin/markdown/markdown.js"></script>
+	<script src="plugin/highlight/highlight.js"></script>
+	<script>
+		// More info about initialization & config:
+		// - https://revealjs.com/initialization/
+		// - https://revealjs.com/config/
+		Reveal.initialize({
+			controls: true,
+			progress: true,
+			hash: true,
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight ]
-			});
-		</script>
-	</body>
+			// Learn about plugins: https://revealjs.com/plugins/
+			plugins: [RevealZoom, RevealNotes, RevealSearch, RevealMarkdown, RevealHighlight]
+		});
+	</script>
+</body>
+
 </html>
