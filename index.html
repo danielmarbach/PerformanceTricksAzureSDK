@@ -283,34 +283,7 @@
 						TBD
 					</aside>
 				</section>
-				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|16,19,20|22|5-7" data-trim data-noescape><script type="text/template">
-						List<SomeClass> List() {
-							List<SomeClass> copyList = null;
-							var enumerable = GetValueList<SomeClass>();
-							foreach (var value in enumerable) {
-								copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
-									? new List<SomeClass>(readOnlyList.Count)
-									: new List<SomeClass>();
-						
-								copyList.Add(value);
-							}
-						
-							return copyList;
-						}
-						
-						IEnumerable<TValue> GetValueList<TValue>() {
-							List<TValue> values = null;
-							foreach (var item in data)
-							{
-								values ??= new List<TValue>(data.Count);
-								values.Add((TValue)item);
-							}
-							return values ?? Enumerable.Empty<TValue>();
-						}
-						</script></code></pre>
-				</section>
-				<!-- THIS IS NOT DONE, maybe too much?-->
+				
 			</section>
 			<section>
 				<section data-background="img/excess-g121ed821c_1280.jpg">
