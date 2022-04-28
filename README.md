@@ -145,112 +145,7 @@ By getting rid of the `Any` we were able to squeeze out some good performance im
 - With more modern CSharp versions that have good pattern matching support, it is sometimes possible to do a quick type check and based on the underlying collection type get access to the count without having to use `Count()`. With .NET 6, and later, it is also possible to use [`Enumerable.TryGetNonEnumeratedCount`](https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.trygetnonenumeratedcount) which internally does collection type checking to get the count without enumerating.
 - Wait with instantiating collections until you really need them.
 
-The following code example this represents a slightly simplified case from how the Azure Service Bus SDK interacts with the underlying AMQP protocol demonstrates these principles applied.
-
-```csharp
-
-List<object> data = data = Enumerable.Repeat(new SomeClass(), NumberOfItems).Cast<object>().ToList();
-
-public List<SomeClass> Original()
-{
-    var copyList = new List<SomeClass>();
-    foreach (var value in GetValue<SomeClass>())
-    {
-        copyList.Add(value);
-    }
-
-    return copyList;
-}
-
-IEnumerable<TValue> GetValue<TValue>()
-{
-    return data.Cast<TValue>();
-}
-```
-
-Our first iteration.
-
-```csharp
-public List<SomeClass> List()
-{
-    List<SomeClass> copyList = null;
-    var enumerable = GetValueList<SomeClass>();
-    foreach (var value in enumerable)
-    {
-        copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
-            ? new List<SomeClass>(readOnlyList.Count)
-            : new List<SomeClass>();
-
-        copyList.Add(value);
-    }
-
-    return copyList;
-}
-
-IEnumerable<TValue> GetValueList<TValue>()
-{
-    List<TValue> values = null;
-    foreach (var item in data)
-    {
-        values ??= new List<TValue>(data.Count);
-        values.Add((TValue)item);
-    }
-    return values ?? Enumerable.Empty<TValue>();
-}
-```
-
-Of course in the slightly contrived example here you might be asking why are we doing the pattern matching on the enumerable. In the AMQP case the AMQP library was returning an enumerable. We could not change that API. In case the API is in your control it is possible to do further optimizations by slightly tweaking `GetValueList`
-
-```csharp
-List<TValue> GetValueListReturnList<TValue>()
-{
-    var values = new List<TValue>(data.Count);
-    foreach (var item in data)
-    {
-        values.Add((TValue)item);
-    }
-    return values;
-}
-```
-
-or turning the `GetValueListReturnList` `foreach` into a `for` loop
-
-```csharp
-List<TValue> GetValueListReturnListFor<TValue>()
-{
-    var values = new List<TValue>(data.Count);
-    for (var index = 0; index < data.Count; index++)
-    {
-        var item = data[index];
-        values.Add((TValue) item);
-    }
-
-    return values;
-}
-```
-
-and then combining that with replacing the outer `foreach` with a `for` loop as well and removing the pattern match
-
-```csharp
-public List<SomeClass> ListForReturnListFor()
-{
-    List<SomeClass> copyList = null;
-    var enumerable = GetValueListReturnListFor<SomeClass>();
-    for (var index = 0; index < enumerable.Count; index++)
-    {
-        var value = enumerable[index];
-        copyList ??= new List<SomeClass>(enumerable.Count);
-
-        copyList.Add(value);
-    }
-
-    return copyList;
-}
-```
-
-![](benchmarks/CollectionComparison.png)
-
-Now we are really getting in weird territory. Arguably, optimizing things at the level of `foreach` vs `for` can be considered to be too crazy and esoteric. Like with all things, it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial. For example, if you are trying to optimize something that uses `IEnumerable` that is passed based on the user input like as for the `AmqReceiver` by applying the rules above you might turn this piece of code:
+Going back to the previous example that we have optimized already quite a bit, let's see how we can apply those principles we learned above to the code. As a reminder here is how the code looks like.
 
 ```csharp
 public Task CompleteAsync(IEnumerable<string> lockTokens) => CompleteInternalAsync(lockTokens);
@@ -269,7 +164,7 @@ private Task CompleteInternalAsync(IEnumerable<string> lockTokens)
 }
 ```
 
-into something like
+In order to know which of these principles we can apply we have to be aware of what collection types are usually passed as parameters to the `CompleteAsync` method. In the .NET Azure SDK the `lockTokens` enumerable is almost always an already materialized collection type that implements `IReadOnlyCollection`. So we can pattern match for that scenario like the following:
 
 ```csharp
 public Task CompleteAsync(IEnumerable<string> lockTokens)
@@ -281,8 +176,11 @@ public Task CompleteAsync(IEnumerable<string> lockTokens)
     };
     return CompleteInternalAsync(readOnlyCollection);
 }
+```
 
+The internal method signature has to be changed to accept a paramter of type `IReadOnlyCollection`. For the empty case we can directly use the empty array and in the other cases we use an array. Because we have the count available the array can be properly initialized with the desired count (if we'd be using lists this would be even more important because lists can automatically grow which can allocate a lot and takes time).
 
+```csharp
 private Task CompleteInternalAsync(IReadOnlyCollection<string> lockTokens)
 {
     int count = lockTokens.Count;
@@ -305,7 +203,9 @@ let's see how this code behaves under various inputs passed as `IEnumerable<stri
 
 ![](benchmarks/LinqAfterComparison.png)
 
-while we managed to get some additional savings in terms of allocations over some collection types, we can see actually passing an enumerable that gets lazy enumerated is behaving much worse than our first simple optimization. 
+while we managed to get some additional savings in terms of allocations over some collection types, we can see actually passing an enumerable that gets lazy enumerated is behaving much worse than our first simple optimization. Is that an indication we shouldn't be doing such a refactoring? Well it depends. If the code path in question is executed under huge load and you have a good enough understanding of the types passed to the method it might be worth doing the optimization. Otherwise probably not and readability should be the key driver instead of trying to gold plate every part of the code base. It is quite likely you have other areas in your code that are slowing things down way more. Fire up your favorite memory and performance profiler and get a better understanding. Once you have tweaked those other paths and these once start to come up you have some good guidelines above that will help you squeeze every last speed improvement out of it.
+
+Like with all things, it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial.
 
 ### Be aware of closure allocations
 
@@ -716,6 +616,12 @@ private static void ComputeHash(ReadOnlySpan<byte> data,
 ```
 
 ![](/benchmarks/PartitionKeyResolver.png)
+
+## Wrap up
+
+The biggest efficiency improvements can usually be achieved by tweaking expensive I/O-Operations since they are hundreds or thousands of time more expensive than memory allocations. Once that is done the principles and practices here can make your code even faster. Many times these optimizations presented here can also be efficiently combined with refactorings and redesigns on the hot path.
+
+For us, as engineers, it means we have to know what to ignore and knowing what to pay close attention to in the code base we are working. And sometimes that will mean ignoring the performance optimizations learned here in the code bases they don't matter, yet consistently applying them where they do. Happy coding. 
 
 ## Interesting Pullrequests
 
