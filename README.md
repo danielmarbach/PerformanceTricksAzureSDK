@@ -33,7 +33,7 @@ A good way to explore what scale means is to discover the assumptions that have 
 
 ## Avoid excessive allocations to reduce the GC overhead
 
-### Think twice before using LINQ or unnecessary enumeration on the hot path
+### Think at least twice before using LINQ or unnecessary enumeration on the hot path
 
 LINQ is great, and I wouldn't want to miss it at all. Yet, on the hot path it is far too easy to get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT to optimize. Let's look at a piece of code from the `AmqpReceiver`
 
@@ -136,14 +136,16 @@ Let's see what we got here.
 
 ![](benchmarks/LinqBeforeAfterComparison.png)
 
-By getting rid of the `Any` we were able to squeeze out some good performance improvements. Sometimes, though, we can do even more. For example, there are a few general rules we can fully when we turn a refactor a code path using LINQ to collection-based operations. 
+By getting rid of the `Any` we were able to squeeze out some good performance improvements. Sometimes, though, we can do even more. For example, there are a few general rules we can follow when we refactor a code path using LINQ to collection-based operations. 
 
 - Use `Array.Empty<T>` to represent empty arrays
 - Use `Enumerable.Empty<T>` to represent empty enumerables
 - When the size of the items to be added to the collection are known upfront, initialize the collection with the correct count to prevent the collection from growing and thus allocating more and reshuffling things internally
-- Use the concrete collection type instead of interfaces or abstract types. For example, when enumerating through a `List<T>` with `foreach` it uses a non-allocating `List<T>.Enumerator` struct. But when it is used through for example `IEnumerable<T>` that struct is boxed to `IEnumerator<T>` in the foreach and thus allocates.
+- Use the concrete collection type instead of interfaces or abstract types. For example, when enumerating through a `List<T>` with `foreach` it uses a non-allocating `List<T>.Enumerator` struct. But when it is used through for example `IEnumerable<T>` that struct is boxed to `IEnumerator<T>` in the foreach and thus allocates. Of course for public APIs it is sometimes better to use the most generic type to be as broadly applicable as possible. Mileage may vary.
 - With more modern CSharp versions that have good pattern matching support, it is sometimes possible to do a quick type check and based on the underlying collection type get access to the count without having to use `Count()`. With .NET 6, and later, it is also possible to use [`Enumerable.TryGetNonEnumeratedCount`](https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.trygetnonenumeratedcount) which internally does collection type checking to get the count without enumerating.
 - Wait with instantiating collections until you really need them.
+
+The following code example this represents a slightly simplified case from how the Azure Service Bus SDK interacts with the underlying AMQP protocol demonstrates these principles applied.
 
 ```csharp
 
@@ -165,6 +167,8 @@ IEnumerable<TValue> GetValue<TValue>()
     return data.Cast<TValue>();
 }
 ```
+
+Our first iteration.
 
 ```csharp
 public List<SomeClass> List()
@@ -195,7 +199,7 @@ IEnumerable<TValue> GetValueList<TValue>()
 }
 ```
 
-by slightly tweaking `GetValueList`
+Of course in the slightly contrived example here you might be asking why are we doing the pattern matching on the enumerable. In the AMQP case the AMQP library was returning an enumerable. We could not change that API. In case the API is in your control it is possible to do further optimizations by slightly tweaking `GetValueList`
 
 ```csharp
 List<TValue> GetValueListReturnList<TValue>()
@@ -225,7 +229,7 @@ List<TValue> GetValueListReturnListFor<TValue>()
 }
 ```
 
-and then combining that with replacing the outer `foreach` with a `for` loop as well
+and then combining that with replacing the outer `foreach` with a `for` loop as well and removing the pattern match
 
 ```csharp
 public List<SomeClass> ListForReturnListFor()
@@ -235,9 +239,7 @@ public List<SomeClass> ListForReturnListFor()
     for (var index = 0; index < enumerable.Count; index++)
     {
         var value = enumerable[index];
-        copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
-            ? new List<SomeClass>(readOnlyList.Count)
-            : new List<SomeClass>();
+        copyList ??= new List<SomeClass>(enumerable.Count);
 
         copyList.Add(value);
     }
@@ -371,18 +373,6 @@ if (num1 != 0)
 by leveraging the latest improvements to the language and the runtime such as static lambdas, ValueTasks and ValueTuples and introducing a generic parameter we can modify the code to allow passing in the required state from the outside into the lambda.
 
 ```csharp
-internal async ValueTask RunOperation<T1>(
-    Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
-    T1 t1,
-    TransportConnectionScope scope,
-    CancellationToken cancellationToken) =>
-    await RunOperation(static async (value, timeout, token) =>
-    {
-        var (t1, operation) = value;
-        await operation(t1, timeout, token).ConfigureAwait(false);
-        return default(object);
-    }, (t1, operation), scope, cancellationToken).ConfigureAwait(false);
-
 internal async ValueTask<TResult> RunOperation<T1, TResult>(
     Func<T1, TimeSpan, CancellationToken, ValueTask<TResult>> operation,
     T1 t1,
@@ -408,6 +398,19 @@ internal async ValueTask<TResult> RunOperation<T1, TResult>(
         }
     }
 }
+
+internal async ValueTask RunOperation<T1>(
+    Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
+    T1 t1,
+    TransportConnectionScope scope,
+    CancellationToken cancellationToken) =>
+    await RunOperation(static async (value, timeout, token) =>
+    {
+        var (t1, operation) = value;
+        await operation(t1, timeout, token).ConfigureAwait(false);
+        return default(object);
+    }, (t1, operation), scope, cancellationToken).ConfigureAwait(false);
+
 ```
 
 This then gets compiled down to
@@ -432,7 +435,7 @@ To demonstrate how these can add up in real-world scenarios, let me show you a b
 
 ![](benchmarks/NServiceBusPipelineExecution.png)
 
-But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) for Rider for example can also help to discover these types of issues while writing or refactoring code. Many built-in .NET types that use delegates have nowadays generic overloads that allow to pass state into the delegate. For example `ConcurrentDictionary` has `public TValue GetOrAdd<TArg> (TKey key, Func<TKey,TArg,TValue> valueFactory, TArg factoryArgument);` which allows to pass external state into the lambda. When you need to access multiple state parameters inside the `GetOrAdd` method you can use `ValueTuple` to pass the state into it.
+But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer for Jetbrains Rider](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) or [Clr Heap Allocation Analyzer for Visual Studio](https://marketplace.visualstudio.com/items?itemName=MukulSabharwal.ClrHeapAllocationAnalyzer) for example can also help to discover these types of issues while writing or refactoring code. Many built-in .NET types that use delegates have nowadays generic overloads that allow to pass state into the delegate. For example `ConcurrentDictionary` has `public TValue GetOrAdd<TArg> (TKey key, Func<TKey,TArg,TValue> valueFactory, TArg factoryArgument);` which allows to pass external state into the lambda. When you need to access multiple state parameters inside the `GetOrAdd` method you can use `ValueTuple` to pass the state into it.
 
 ```csharp
 var someState1 = new object();

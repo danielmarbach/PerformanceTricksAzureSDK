@@ -101,7 +101,7 @@
 					</ul>
 				</aside>
 			</section>
-			<section >
+			<section>
 				<section data-background-video="vids/Give-me-the-code-natalia.mp4">
 				</section>
 				<section data-auto-animate>
@@ -130,63 +130,367 @@
 				</section>
 			</section>
 			<section>
-				<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="8|10|11" data-trim data-noescape><script type="text/template">
-						public class AmqpReceiver {
-							
-							ConcurrentBag<Guid> _lockedMessages = new ();
-							
-							public Task CompleteAsync(IEnumerable<string> lockTokens) 
-								=> CompleteInternalAsync(lockTokens);
-							
-							Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
-							{
-								Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
-								if (lockTokenGuids.Any(lockToken => _lockedMessages.Contains(lockToken))) 
+				<section data-background="img/excess-g121ed821c_1280.jpg">
+					<div
+						style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
+						<p>Think at least twice before using LINQ or unnecessary enumeration on the hot path</p>
+					</div>
+					<aside class="notes">
+						LINQ is great, and I wouldn't want to miss it at all. Yet, on the hot path it is far too easy to
+						get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT
+						to optimize. Let's look at a piece of code from the AmqpReceiver
+					</aside>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|8|10|11" data-trim data-noescape><script type="text/template">
+							public class AmqpReceiver {
+								
+								ConcurrentBag<Guid> _lockedMessages = new ();
+								
+								public Task CompleteAsync(IEnumerable<string> lockTokens) 
+									=> CompleteInternalAsync(lockTokens);
+								
+								Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
 								{
-								  // do special path accessing lockTokenGuids
-								  return Task.CompletedTask;
+									Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
+									if (lockTokenGuids.Any(lockToken => _lockedMessages.Contains(lockToken))) 
+									{
+									  // do special path accessing lockTokenGuids
+									  return Task.CompletedTask;
+									}
+									// do normal path accessing lockTokenGuids
+									return Task.CompletedTask;
 								}
-								// do normal path accessing lockTokenGuids
-								return Task.CompletedTask;
 							}
+						</script></code></pre>
+					<aside class="notes">
+						<ul>
+							<li>Explain AmqpReceiver</li>
+							<li>Enumerable, string to guid, Any with contains</li>
+							<li>Decompile</li>
+						</ul>
+					</aside>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|8-9|10" data-trim data-noescape><script type="text/template">
+							public class AmqpReceiver {
+	
+								// ...
+								// Compiler generated chunk we are not really interested in right now
+	
+								private Task CompleteInternalAsync(IEnumerable<string> lockTokens)
+								{
+									Enumerable.Any(Enumerable.ToArray(Enumerable.Select(lockTokens, <>c.<>9__2_0 ?? 
+										(<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0)))), 
+											new Func<Guid, bool>(<CompleteInternalAsync>b__2_1));
+									return Task.CompletedTask;
+								}
+							
+								[CompilerGenerated]
+								private bool <CompleteInternalAsync>b__2_1(Guid lockToken)
+								{
+									return Enumerable.Contains(_requestResponseLockedMessages, lockToken);
+								}
+							}
+						</script></code></pre>
+					<aside class="notes">
+						For every call of CompleteInternalAsync a new instance of Func&lt;Guid, bool&gt; is allocated
+						that points to &lt;CompleteInternalAsync&gtb__2_1. A closure captures the _lockedMessages and
+						the lockToken as state.
+					</aside>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+						public Task CompleteAsync(IEnumerable<string> lockTokens) 
+							=> CompleteInternalAsync(lockTokens);
+
+						Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+						{
+							Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
+							foreach (var tokenGuid in lockTokenGuids) 
+							{
+								if (_requestResponseLockedMessages.Contains(tokenGuid))
+								{
+									return Task.CompletedTask;
+								}
+							}
+							return Task.CompletedTask;
 						}
-					</script></code></pre>
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6-8" data-trim data-noescape><script type="text/template">
+						public Task CompleteAsync(IEnumerable<string> lockTokens) 
+							=> CompleteInternalAsync(lockTokens);
+
+						Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+						{
+							Guid[] array = Enumerable.ToArray(Enumerable.Select(lockTokens, 
+								<>c.<>9__2_0 ?? 
+								(<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0))));
+
+							int num = 0;
+							while (num < array.Length)
+							{
+								Guid item = array[num];
+								if (_requestResponseLockedMessages.Contains(item))
+								{
+									return Task.CompletedTask;
+								}
+								num++;
+							}
+							return Task.CompletedTask;
+						}
+						</script></code></pre>
+				</section>
+				<section>
+					<img src="benchmarks/LinqBeforeAfterComparisonCropped.png" />
+					<aside class="notes">
+						By getting rid of the Any we were able to squeeze out some good performance improvements.
+						Sometimes, though, we can do even more. For example, there are a few general rules we can follow
+						when we refactor a code path using LINQ to collection-based operations.
+					</aside>
+				</section>
+				<section>
+					<h2 class="r-fit-text" data-id="thumb">LINQ to collection-based operations</h2>
+					<ul>
+						<li class="fragment fade-in">Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
+						</li>
+						<li class="fragment fade-in">Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
+							enumerables</li>
+						<li class="fragment fade-in">Prevent collections from growing</li>
+						<li class="fragment fade-in">Use concrete collection types</li>
+						<li class="fragment fade-in">Leverage pattern matching or
+							<code>Enumerable.TryGetNonEnumeratedCount</code>
+						</li>
+					</ul>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1-2|6|6,13" data-trim data-noescape><script type="text/template">
+						List<object> data = data = Enumerable.Repeat(new SomeClass(), NumberOfItems)
+							.Cast<object>().ToList();
+
+						List<SomeClass> Original() {
+							var copyList = new List<SomeClass>();
+							foreach (var value in GetValue<SomeClass>()) {
+								copyList.Add(value);
+							}
+							return copyList;
+						}
+						
+						IEnumerable<TValue> GetValue<TValue>() {
+							return data.Cast<TValue>();
+						}
+						</script></code></pre>
+					<aside class="notes">
+						TBD
+					</aside>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|16,19,20|22|5-7" data-trim data-noescape><script type="text/template">
+						List<SomeClass> List() {
+							List<SomeClass> copyList = null;
+							var enumerable = GetValueList<SomeClass>();
+							foreach (var value in enumerable) {
+								copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
+									? new List<SomeClass>(readOnlyList.Count)
+									: new List<SomeClass>();
+						
+								copyList.Add(value);
+							}
+						
+							return copyList;
+						}
+						
+						IEnumerable<TValue> GetValueList<TValue>() {
+							List<TValue> values = null;
+							foreach (var item in data)
+							{
+								values ??= new List<TValue>(data.Count);
+								values.Add((TValue)item);
+							}
+							return values ?? Enumerable.Empty<TValue>();
+						}
+						</script></code></pre>
+				</section>
+				<!-- THIS IS NOT DONE, maybe too much?-->
 			</section>
 			<section>
-				<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="23,27-31" data-trim data-noescape><script type="text/template">
-						public class AmqpReceiver {
-							[Serializable]
-							[CompilerGenerated]
-							private sealed class <>c
-							{
-								public static readonly <>c <>9 = new <>c();
-						
-								public static Func<string, Guid> <>9__2_0;
-						
-								internal Guid <CompleteInternalAsync>b__2_0(string token)
-								{
-									return new Guid(token);
+				<section data-background="img/excess-g121ed821c_1280.jpg">
+					<div
+						style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
+						<p>Be aware of closure allocations</p>
+					</div>
+					<aside class="notes">
+						We have already touched a bit on closure allocations during our LINQ performance investigations.
+						But closures can occur anywhere where we have lambdas (Action or Func delegates) being invoked
+						that access state from the outside of the lambda.
+					</aside>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+						async Task RunOperation(
+							Func<TimeSpan, Task> operation, 
+							TransportConnectionScope scope, CancellationToken cancellationToken) 
+						{
+							TimeSpan tryTimeout = CalculateTryTimeout(0);
+							// omitted
+							while (!cancellationToken.IsCancellationRequested) {
+								if (IsServerBusy) {
+									await Task.Delay(ServerBusyBaseSleepTime, cancellationToken);
 								}
 						
-							}
-						
-							// omitted for brevity
-						
-							private Task CompleteInternalAsync(IEnumerable<string> lockTokens)
-							{
-								Enumerable.Any(Enumerable.ToArray(Enumerable.Select(lockTokens, <>c.<>9__2_0 ?? 
-									(<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0)))), 
-										new Func<Guid, bool>(<CompleteInternalAsync>b__2_1));
-								return Task.CompletedTask;
-							}
-						
-							[CompilerGenerated]
-							private bool <CompleteInternalAsync>b__2_1(Guid lockToken)
-							{
-								return Enumerable.Contains(_requestResponseLockedMessages, lockToken);
+								try	{
+									await operation(tryTimeout);
+									return;
+								}
+								catch {
+									// omitted
+								}
 							}
 						}
-					</script></code></pre>
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1,4" data-trim data-noescape><script type="text/template">
+						TransportMessageBatch messageBatch = null;
+						Task createBatchTask = _retryPolicy.RunOperation(async (timeout) =>
+						{
+							messageBatch = await CreateMessageBatchInternalAsync(options, timeout);
+						},
+						_connectionScope,
+						cancellationToken);
+						await createBatchTask;
+						return messageBatch;
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|2,8" data-trim data-noescape><script type="text/template">
+						if (num1 != 0)	{
+							this.\u003C\u003E8__1 = new AmqpSender.\u003C\u003Ec__DisplayClass16_0();
+							this.\u003C\u003E8__1.\u003C\u003E4__this = this.\u003C\u003E4__this;
+							this.\u003C\u003E8__1.options = this.options;
+							this.\u003C\u003E8__1.messageBatch = (TransportMessageBatch) null;
+
+							configuredTaskAwaiter = amqpSender._retryPolicy.RunOperation(
+								new Func<TimeSpan, Task>((object) this.\u003C\u003E8__1,
+									 __methodptr(\u003CCreateMessageBatchAsync\u003Eb__0)), 
+									 (TransportConnectionScope) amqpSender._connectionScope, 
+									 this.cancellationToken).ConfigureAwait(false).GetAwaiter();
+
+							// rest omitted
+						}
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1|2,3|14" data-trim data-noescape><script type="text/template">
+						internal async ValueTask<TResult> RunOperation<T1, TResult>(
+							Func<T1, TimeSpan, CancellationToken, ValueTask<TResult>> operation,
+							T1 t1,
+							TransportConnectionScope scope,
+							CancellationToken cancellationToken) {
+							TimeSpan tryTimeout = CalculateTryTimeout(0);
+							// omitted
+							while (!cancellationToken.IsCancellationRequested) {
+								if (IsServerBusy) {
+									await Task.Delay(ServerBusyBaseSleepTime, cancellationToken);
+								}
+						
+								try	{
+									return await operation(t1, tryTimeout, cancellationToken);
+								}
+								catch {
+									// omitted
+								}
+							}
+						}
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12" data-trim data-noescape><script type="text/template">
+						internal async ValueTask RunOperation<T1>(
+							Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
+							T1 t1,
+							TransportConnectionScope scope,
+							CancellationToken cancellationToken) =>
+								await RunOperation(static async (value, timeout, token) =>
+								{
+									var (t1, operation) = value;
+									await operation(t1, timeout, token);
+									return default(object);
+								}, 
+							(t1, operation),
+							scope, cancellationToken);
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.3em"><code class="language-csharp" data-line-numbers="|4,9" data-trim data-noescape><script type="text/template">
+						if (num1 != 0) {
+							configuredTaskAwaiter = t1._retryPolicy
+								.RunOperation<AmqpSender, CreateMessageBatchOptions, TransportMessageBatch>(
+								AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 ?? (AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 = 
+									new Func<AmqpSender, CreateMessageBatchOptions, TimeSpan, CancellationToken, Task<TransportMessageBatch>>(
+										(object) AmqpSender.\u003C\u003Ec.\u003C\u003E9, 
+										__methodptr(\u003CCreateMessageBatchAsync\u003Eb__16_0))), 
+										t1, 
+										this.options, 
+										(TransportConnectionScope) t1._connectionScope, 
+										this.cancellationToken).ConfigureAwait(false).GetAwaiter();
+							// rest omitted
+						}
+						</script></code></pre>
+					<aside class="notes">
+						With that small change, we save the display class and the function delegate allocations and can
+						properly usage methods that support value tasks without having to allocate a task instance when
+						not necessary.
+						To demonstrate how these can add up in real-world scenarios, let me show you a before and after
+						comparison when I removed the closure allocations for NServiceBus pipeline execution
+					</aside>
+				</section>
+				<section>
+					<img src="benchmarks/NServiceBusPipelineExecutionCropped.png" />
+				</section>
+				<section>
+					<h2 class="r-fit-text" data-id="thumb">How to detect those allocations?</h2>
+					<ul>
+						<li class="fragment fade-in">Use memory profilers and watch out for excessive allocations of
+							<code>*__DisplayClass*</code> or various variants of <code>Action*</code> and
+							<code>Func*</code>
+						</li>
+						<li class="fragment fade-in">Use tools like <a
+								href="https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer">Heap Allocation
+								Viewer (Rider)</a> or <a
+								href="https://marketplace.visualstudio.com/items?itemName=MukulSabharwal.ClrHeapAllocationAnalyzer">Heap
+								Allocation Analyzer (Visual Studio)</a></li>
+						<li class="fragment fade-in">Many built-in .NET types that use delegates have nowadays generic
+							overloads that allow to pass state into the delegate.</li>
+					</ul>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+						var someState1 = new object();
+						var someOtherState = 42;
+						
+						var dictionary = new ConcurrentDictionary<string, string>();
+						
+						dictionary.GetOrAdd("SomeKey", static (key, state) => {
+							var (someState, someOtherState) = state;
+						
+							return $"{someState}_{someOtherState}";
+						}, (someState1, someOtherState));
+						</script></code></pre>
+				</section>
+			</section>
+			<section>
+				<section data-background="img/excess-g121ed821c_1280.jpg">
+					<div
+						style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
+						<p>Pool and re-use buffers (and larger objects)</p>
+					</div>
+				</section>
 			</section>
 		</div>
 	</div>

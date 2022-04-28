@@ -81,9 +81,7 @@ public class EnumerableCount
         var enumerable = GetValueListReturnList<SomeClass>();
         foreach (var value in enumerable)
         {
-            copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
-                ? new List<SomeClass>(readOnlyList.Count)
-                : new List<SomeClass>();
+            copyList ??= new List<SomeClass>(enumerable.Count);
 
             copyList.Add(value);
         }
@@ -108,9 +106,7 @@ public class EnumerableCount
         var enumerable = GetValueListReturnListFor<SomeClass>();
         foreach (var value in enumerable)
         {
-            copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
-                ? new List<SomeClass>(readOnlyList.Count)
-                : new List<SomeClass>();
+            copyList ??= new List<SomeClass>(enumerable.Count);
 
             copyList.Add(value);
         }
@@ -126,9 +122,7 @@ public class EnumerableCount
         for (var index = 0; index < enumerable.Count; index++)
         {
             var value = enumerable[index];
-            copyList ??= enumerable is IReadOnlyCollection<SomeClass> readOnlyList
-                ? new List<SomeClass>(readOnlyList.Count)
-                : new List<SomeClass>();
+            copyList ??= new List<SomeClass>(enumerable.Count);
 
             copyList.Add(value);
         }
