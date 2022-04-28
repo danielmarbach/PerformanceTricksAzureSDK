@@ -391,7 +391,7 @@ var lockTokenGuid = new Guid(guidBytes);
 
 With the introduction of `Span<T>` and the `stackalloc` keyword we can directly allocate the memory on the method's stack that is cleared when the method returns. 
 
-![](/benchmarks/StackallocWithGuid.png.png)
+![](/benchmarks/StackallocWithGuid.png)
 
 ## Parameter overloads and boxing
 

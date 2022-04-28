@@ -34,11 +34,12 @@
 	<div class="reveal">
 		<div class="slides">
 			<section data-background="img/juggler-trick-magician-juggle-1216853.jpg">
-				<div
-					style="left: 10; width: 52%; padding: 25px; font-size: 30px; text-align: left;">
-					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from contributing to the Azure .NET SDK</h3>
+				<div style="left: 10; width: 52%; padding: 25px; font-size: 30px; text-align: left;">
+					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from
+						contributing to the Azure .NET SDK</h3>
 					<p>
-						<a style="text-transform: none;color: rgba(31, 129, 74, 0.6);" href="https://twitter.com/danielmarbach">Daniel Marbach</a>
+						<a style="text-transform: none;color: rgba(31, 129, 74, 0.6);"
+							href="https://twitter.com/danielmarbach">Daniel Marbach</a>
 					</p>
 				</div>
 			</section>
@@ -263,27 +264,57 @@
 					</ul>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1-2|6|6,13" data-trim data-noescape><script type="text/template">
-						List<object> data = data = Enumerable.Repeat(new SomeClass(), NumberOfItems)
-							.Cast<object>().ToList();
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
+						public Task CompleteAsync(IEnumerable<string> lockTokens) 
+							=> CompleteInternalAsync(lockTokens);
 
-						List<SomeClass> Original() {
-							var copyList = new List<SomeClass>();
-							foreach (var value in GetValue<SomeClass>()) {
-								copyList.Add(value);
+						Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+						{
+							Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
+							foreach (var tokenGuid in lockTokenGuids) 
+							{
+								if (_requestResponseLockedMessages.Contains(tokenGuid))
+								{
+									return Task.CompletedTask;
+								}
 							}
-							return copyList;
+							return Task.CompletedTask;
+						}
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|2-6|10|12-13|17-18" data-trim data-noescape><script type="text/template">
+						public Task CompleteAsync(IEnumerable<string> lockTokens) {
+							IReadOnlyCollection<string> readOnlyCollection = lockTokens switch
+							{
+								IReadOnlyCollection<string> asReadOnlyCollection => asReadOnlyCollection,
+								_ => lockTokens.ToArray(),
+							};
+							return CompleteInternalAsync(readOnlyCollection);
 						}
 						
-						IEnumerable<TValue> GetValue<TValue>() {
-							return data.Cast<TValue>();
+						Task CompleteInternalAsync(IReadOnlyCollection<string> lockTokens)
+						{
+							int count = lockTokens.Count;
+							Guid[] lockTokenGuids = count == 0 ? Array.Empty<Guid>() : new Guid[count];
+							int index = 0;
+							foreach (var token in lockTokens)
+							{
+								var tokenGuid = new Guid(token);
+								lockTokenGuids[index++] = tokenGuid;
+								if (_requestResponseLockedMessages.Contains(tokenGuid))
+								{
+									return Task.CompletedTask;
+								}
+							}
+							return Task.CompletedTask;
 						}
 						</script></code></pre>
 					<aside class="notes">
 						TBD
 					</aside>
 				</section>
-				
+
 			</section>
 			<section>
 				<section data-background="img/excess-g121ed821c_1280.jpg">
@@ -299,7 +330,7 @@
 					</aside>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
 						async Task RunOperation(
 							Func<TimeSpan, Task> operation, 
 							TransportConnectionScope scope, CancellationToken cancellationToken) 
@@ -323,7 +354,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1,4" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1,4" data-trim data-noescape><script type="text/template">
 						TransportMessageBatch messageBatch = null;
 						Task createBatchTask = _retryPolicy.RunOperation(async (timeout) =>
 						{
@@ -336,7 +367,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|2,8" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|2,8" data-trim data-noescape><script type="text/template">
 						if (num1 != 0)	{
 							this.\u003C\u003E8__1 = new AmqpSender.\u003C\u003Ec__DisplayClass16_0();
 							this.\u003C\u003E8__1.\u003C\u003E4__this = this.\u003C\u003E4__this;
@@ -354,7 +385,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1|2,3|14" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|1|2,3|14" data-trim data-noescape><script type="text/template">
 						internal async ValueTask<TResult> RunOperation<T1, TResult>(
 							Func<T1, TimeSpan, CancellationToken, ValueTask<TResult>> operation,
 							T1 t1,
@@ -378,7 +409,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12" data-trim data-noescape><script type="text/template">
 						internal async ValueTask RunOperation<T1>(
 							Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
 							T1 t1,
@@ -459,6 +490,37 @@
 						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
 						<p>Pool and re-use buffers (and larger objects)</p>
 					</div>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|4" data-trim data-noescape><script type="text/template">
+						// somewhere from the network we get a guid as a byte array
+						var data = new ArraySegment<byte>(Guid.NewGuid().ToByteArray());
+
+						var guidBuffer = new byte[16];
+						Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
+						var lockTokenGuid = new Guid(guidBuffer);
+						</script></code></pre>
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|4" data-trim data-noescape><script type="text/template">
+						byte[] guidBuffer =  ArrayPool<byte>.Shared.Rent(16);
+						Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
+						var lockTokenGuid = new Guid(guidBuffer);
+						ArrayPool<byte>.Shared.Return(guidBuffer);
+						</script></code></pre>
+				</section>
+				<section>
+					<img src="benchmarks/BufferAndBlockCopyPooling.png" />
+				</section>
+				<section>
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2" data-trim data-noescape><script type="text/template">
+						Span<byte> guidBytes = stackalloc byte[16];
+						data.AsSpan().CopyTo(guidBytes);
+						var lockTokenGuid = new Guid(guidBytes);
+						</script></code></pre>
+				</section>
+				<section>
+					<img src="benchmarks/StackallocWithGuid.png" />
 				</section>
 			</section>
 		</div>
