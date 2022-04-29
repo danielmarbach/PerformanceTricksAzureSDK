@@ -178,7 +178,7 @@ public Task CompleteAsync(IEnumerable<string> lockTokens)
 }
 ```
 
-The internal method signature has to be changed to accept a paramter of type `IReadOnlyCollection`. For the empty case we can directly use the empty array and in the other cases we use an array. Because we have the count available the array can be properly initialized with the desired count (if we'd be using lists this would be even more important because lists can automatically grow which can allocate a lot and takes time).
+The internal method signature has to be changed to accept a parameter of type `IReadOnlyCollection`. For the empty case we can directly use the empty array and in the other cases we use an array. Because we have the count available, the array can be properly initialized with the desired count (if we'd be using lists this would be even more important because lists can automatically grow which can allocate a lot and takes time).
 
 ```csharp
 private Task CompleteInternalAsync(IReadOnlyCollection<string> lockTokens)
@@ -203,7 +203,7 @@ let's see how this code behaves under various inputs passed as `IEnumerable<stri
 
 ![](benchmarks/LinqAfterComparison.png)
 
-while we managed to get some additional savings in terms of allocations over some collection types, we can see actually passing an enumerable that gets lazy enumerated is behaving much worse than our first simple optimization. Is that an indication we shouldn't be doing such a refactoring? Well it depends. If the code path in question is executed under huge load and you have a good enough understanding of the types passed to the method it might be worth doing the optimization. Otherwise probably not and readability should be the key driver instead of trying to gold plate every part of the code base. It is quite likely you have other areas in your code that are slowing things down way more. Fire up your favorite memory and performance profiler and get a better understanding. Once you have tweaked those other paths and these once start to come up you have some good guidelines above that will help you squeeze every last speed improvement out of it.
+while we managed to get some additional savings in terms of allocations over some collection types, we can see actually passing an enumerable that gets lazy enumerated is behaving much worse than our first simple optimization. Is that an indication we shouldn't be doing such a refactoring? Well it depends. If the code path in question is executed under huge load and you have a good enough understanding of the types passed to the method, it might be worth doing the optimization. Otherwise, probably not, and readability should be the key driver instead of trying to gold plate every part of the code base. It is quite likely you have other areas in your code that are slowing things down way more. Fire up your favorite memory and performance profiler and get a better understanding. Once you have tweaked those other paths and these once start to come up, you have some good guidelines above that will help you squeeze every last speed improvement out of it.
 
 Like with all things, it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial.
 
@@ -336,7 +336,7 @@ To demonstrate how these can add up in real-world scenarios, let me show you a b
 
 ![](benchmarks/NServiceBusPipelineExecution.png)
 
-But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer for Jetbrains Rider](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) or [Clr Heap Allocation Analyzer for Visual Studio](https://marketplace.visualstudio.com/items?itemName=MukulSabharwal.ClrHeapAllocationAnalyzer) for example can also help to discover these types of issues while writing or refactoring code. Many built-in .NET types that use delegates have nowadays generic overloads that allow to pass state into the delegate. For example `ConcurrentDictionary` has `public TValue GetOrAdd<TArg> (TKey key, Func<TKey,TArg,TValue> valueFactory, TArg factoryArgument);` which allows to pass external state into the lambda. When you need to access multiple state parameters inside the `GetOrAdd` method you can use `ValueTuple` to pass the state into it.
+But how would I detect those? When using memory tools, look out for excessive allocations of `*__DisplayClass*` or various variants of `Action` and `Func` allocations. Extensions like the [Heap Allocation Viewer for Jetbrains Rider](https://plugins.jetbrains.com/plugin/9223-heap-allocations-viewer) or [Clr Heap Allocation Analyzer for Visual Studio](https://marketplace.visualstudio.com/items?itemName=MukulSabharwal.ClrHeapAllocationAnalyzer) for example can also help to discover these types of issues while writing or refactoring code. Many built-in .NET types that use delegates have nowadays generic overloads that allow to pass state into the delegate. For example, `ConcurrentDictionary` has `public TValue GetOrAdd<TArg> (TKey key, Func<TKey,TArg,TValue> valueFactory, TArg factoryArgument);` which allows passing external state into the lambda. When you need to access multiple state parameters inside the `GetOrAdd` method, you can use `ValueTuple` to pass the state into it.
 
 ```csharp
 var someState1 = new object();
@@ -354,7 +354,7 @@ dictionary.GetOrAdd("SomeKey", static (key, state) =>
 
 ### Pool and re-use buffers (and larger objects)
 
-Azure Service Bus uses the concept lock tokens (a glorified GUID) in certain modes to ackknowledge messages. For messages loaded by the client there is a this lock token that needs to be turned into a GUID representation. The existing code looked like the following:
+Azure Service Bus uses the concept of lock tokens (a glorified GUID) in certain modes to acknowledge messages. For messages loaded by the client, there is a lock token that needs to be turned into a GUID representation. The existing code looked like the following:
 
 ```csharp
 var fromNetwork = new ArraySegment<byte>(Guid.NewGuid().ToByteArray());
@@ -366,9 +366,9 @@ Buffer.BlockCopy(fromNetwork.Array, fromNetwork.Offset, guidBuffer, 0, 16);
 var lockTokenGuid = new Guid(guidBuffer);
 ```
 
-For every message received a new byte array of length 16 is allocated on the heap and then the value of the ArraySegment is copied into the buffer. The buffer is then passed to the Guid constructor. When receiving lots of messages this creates a lot of unnecessary allocations.
+For every message received a new byte array of length 16 is allocated on the heap and then the value of the ArraySegment is copied into the buffer. The buffer is then passed to the Guid constructor. When receiving lots of messages this creates countless unnecessary allocations.
 
-.NET has a built in mechanism called `ArrayPool<T>` that allows to have pooled arrays that can be reused. Let's see if we can use that one to improve the performance characteristics of the code.
+.NET has a built-in mechanism called `ArrayPool<T>` that allows to have pooled arrays that can be reused. Let's see if we can use that one to improve the performance characteristics of the code.
 
 ```csharp
 byte[] guidBuffer =  ArrayPool<byte>.Shared.Rent(16);
@@ -381,7 +381,7 @@ Let's measure how we did.
 
 ![](/benchmarks/BufferAndBlockCopyPooling.png)
 
-It turns out while we are saving allocations now we haven't really made things much better overall since the code now takes more than double the time to execute. It might very well be that this is an acceptable tradeoff for library or framework you are building. That being said we can do better. ArrayPool isn't the best usage for smaller arrays. For arrays to an certain threshold it is faster to allocate on the current method stack directly instead of paying the price of renting and return an array.
+It turns out while we are saving allocations now we haven't really made things much better overall since the code now takes more than double the time to execute. It might very well be that this is an acceptable tradeoff for library or framework you are building. That being said, we can do better. ArrayPool isn't the best usage for smaller arrays. For arrays to a certain threshold, it is faster to allocate on the current method stack directly instead of paying the price of renting and return an array.
 
 ```csharp
 Span<byte> guidBytes = stackalloc byte[16];
@@ -389,13 +389,13 @@ data.AsSpan().CopyTo(guidBytes);
 var lockTokenGuid = new Guid(guidBytes);
 ```
 
-With the introduction of `Span<T>` and the `stackalloc` keyword we can directly allocate the memory on the method's stack that is cleared when the method returns. 
+With the introduction of `Span<T>` and the `stackalloc` keyword, we can directly allocate the memory on the method's stack that is cleared when the method returns. 
 
 ![](/benchmarks/StackallocWithGuid.png)
 
 ## Parameter overloads and boxing
 
-Some methods have parameter overloads of type `params object[]`. That can lead to some sneaky and costly array allocations that you might not even be aware of. With never incarnations of .NET there have been a number of improvements done on that area by introducing new method overloads for common cases that don't require to allocate a parameter array. For example instead of using
+Some methods have parameter overloads of type `params object[]`. That can lead to some sneaky and costly array allocations that you might not even be aware of. With never incarnations of .NET there have been a number of improvements done in that area by introducing new method overloads for common cases that don't require allocating a parameter array. For example, instead of using
 
 ```csharp
 public static Task<Task> WhenAny(params Task[] tasks);
@@ -438,7 +438,7 @@ public class BlobEventStoreEventSource : EventSource
 }
 ```
 
-Unfortunately by default the `WriteEvent` method supports only a few parameters before it falls back to using `WriteEvent(Int32, Object[])`. When that happens we are not only allocating an object array per call, but also any value type that is passed to that method is boxed and therefore allocates. For example in the above snippets the `ownershipCount` integer would be boxed into `object`. Especially considering that EventSources are supposed to be turned on in production and therefore need to tolerate high throughput this can quickly become problematic. Luckily there is a special overload of [`WriteEventCore`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventsource.writeeventcore).
+Unfortunately, by default the `WriteEvent` method supports only a few parameters before it falls back to using `WriteEvent(Int32, Object[])`. When that happens, we are not only allocating an object array per call, but also any value type that is passed to that method is boxed and therefore allocates. For example, in the above snippets the `ownershipCount` integer would be boxed into `object`. Especially considering that EventSources are supposed to be turned on in production and therefore need to tolerate high throughput, this can quickly become problematic. Luckily, there is a special overload of [`WriteEventCore`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventsource.writeeventcore).
 
 ```csharp
 [NonEvent]
@@ -482,9 +482,9 @@ private unsafe void WriteEventImproved<TValue>(int eventId,
 
 ## Avoid unnecessary copying of memory
 
-I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also with the `in` paramater modifiers and `readonly struct` we can minimize the amount of copying required when operating various chunks of memory. `Span<T>` is a value type that enables the representation of contiguous regions of arbitrary memory, regardless of whether that memory is associated with a managed object, is provided by native code via interop, or is on the stack. Interally it is a pointer to a memory location and a length to represent the length of the memory represented by the span. One of the other benefits `Span<T>` provides that that because it can be "sliced" into various chunks you can represent various slices of memory of variable length without having to copy the memory. `Span<T>` can only live on the stack while its cousin `Memory<T>` can live on the heap and therefore be used in async methods for example.
+I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also with the `in` parameter modifiers and `readonly struct` we can minimize the amount of copying required when operating various chunks of memory. `Span<T>` is a value type that enables the representation of contiguous regions of arbitrary memory, regardless of whether that memory is associated with a managed object, is provided by native code via interop, or is on the stack. Internally, it is a pointer to a memory location and a length to represent the length of the memory represented by the span. One of the other benefits `Span<T>` provides that because it can be "sliced" into various chunks, you can represent various slices of memory of variable length without having to copy the memory. `Span<T>` can only live on the stack while its cousin `Memory<T>` can live on the heap and therefore be used in asynchronous methods.
 
-Sometimes memory copying is quite obvious to spot in code. For example the Azure Service Bus SDK had a factory method that allows to create an outgoing message from an incoming message
+Sometimes memory copying is quite obvious to spot in code. For example, the Azure Service Bus SDK had a factory method that allows to create an outgoing message from an incoming message
 
 ```csharp
 public class ServiceBusReceivedMessage
@@ -505,7 +505,7 @@ public static ServiceBusMessage CreateFrom(ServiceBusReceivedMessage message)
 }
 ```
 
-with the Azure service Bus library the message body is represented as `BinaryData` which already contains a materialized block of memory that is treated as readonly. There is no need to copy that and we can get rid of this whole code by simply assigning `message.Body` to the new message.
+with the Azure service Bus library the message body is represented as `BinaryData` which already contains a materialized block of memory that is treated as readonly. There is no need to copy that, and we can get rid of this whole code by simply assigning `message.Body` to the new message.
 
 ```csharp
 public class ServiceBusReceivedMessage
@@ -528,7 +528,7 @@ public static ServiceBusMessage CreateFrom(ServiceBusReceivedMessage message)
 
 Other times memory copying isn't so obvious or requires a deep understand of what is happening under the hoods of the framework, library or SDK in use.
 
-The EventHubs client has recently introduced a new publisher type that uses internally a partition key resolver that turns string partition keys into hash codes. 30-40% of the hot path will be using partition keys when publishing and therefore represents a non-trivial amount of CPU and memory cycles when using that publisher type. The hash code function looked like the following.
+The EventHubs client has recently introduced a new publisher type that uses internally a partition key resolver that turns string partition keys into hash codes. 30-40% of the hot path will be using partition keys when publishing, and therefore represents a non-trivial amount of CPU and memory cycles when using that publisher type. The hash code function looked like the following.
 
 ```csharp
 private static short GenerateHashCode(string partitionKey)
@@ -564,7 +564,7 @@ private static void ComputeHash(byte[] data,
 }
 ```
 
-It is pretty conventien that encoding classes allow to turn any arbitrary string into a byte array representation of that string. Unfortunately it also allocates quite a bit of memory and that overall when put into perspective can contribute to significant Gen0 garbage. Because the hash code function accepts arbitrary strings we cannot assume a fixed upper bound for the partition key length. But it is possible to combine the knowledge we learned.
+It is pretty convenient that encoding classes allow to turn any arbitrary string into a byte array representation of that string. Unfortunately, it also allocates quite a bit of memory and that overall when put into perspective can contribute to significant Gen0 garbage. Because the hash code function accepts arbitrary strings we cannot assume a fixed upper bound for the partition key length. But it is possible to combine the knowledge we learned.
 
 ```csharp
 [SkipLocalsInit]
@@ -600,9 +600,9 @@ Instead of operating on the string directly we turn the string into a span. From
 
 In cases when the byte length is longer than the maximum defined stack limit a regular byte array is rented from the ArrayPool. The allocated buffer is then passed to the encoding and then sliced before passing to the `ComputeHash` method into the corresponding memory area that was actually used. At the end the when a buffer was pooled it is returned to the pool without clearing since the partition keys are not considered sensitive data.
 
-While doing the work I have also discovered a bug in the original algorithm. The algorithm is using `BitConverter` to convert parts of the array into a `uint`. And this has problems... Can anyone spot it?
+While doing the work, I have also discovered a bug in the original algorithm. The algorithm is using `BitConverter` to convert parts of the array into a `uint`. And this has problems... Can anyone spot it?
 
-Well for a hash function we want to get the same hash regardless of the underlying system architecture. But BitConverter has the following behavior:
+Well, for a hash function we want to get the same hash regardless of the underlying system architecture. But BitConverter has the following behavior:
 
 > method depends on whether the computer architecture is little-endian or big-endian. The endianness of an architecture is indicated by the `IsLittleEndian` property, which returns true on little-endian systems and false on big-endian systems. On little-endian systems, lower-order bytes precede higher-order bytes. On big-endian system, higher-order bytes precede lower-order bytes. [doc](https://docs.microsoft.com/en-us/dotnet/api/system.bitconverter)
 
