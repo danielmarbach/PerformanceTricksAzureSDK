@@ -353,11 +353,12 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1,4" data-trim data-noescape><script type="text/template">
+					<pre class="" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1,4-5" data-trim data-noescape><script type="text/template">
 						TransportMessageBatch messageBatch = null;
 						Task createBatchTask = _retryPolicy.RunOperation(async (timeout) =>
 						{
-							messageBatch = await CreateMessageBatchInternalAsync(options, timeout);
+							messageBatch = 
+								await CreateMessageBatchInternalAsync(options, timeout);
 						},
 						_connectionScope,
 						cancellationToken);
@@ -366,7 +367,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|2,8" data-trim data-noescape><script type="text/template">
+					<pre class="" style="font-size: 0.43em"><code class="language-csharp" data-line-numbers="|2,8" data-trim data-noescape><script type="text/template">
 						if (num1 != 0)	{
 							this.\u003C\u003E8__1 = new AmqpSender.\u003C\u003Ec__DisplayClass16_0();
 							this.\u003C\u003E8__1.\u003C\u003E4__this = this.\u003C\u003E4__this;
@@ -408,7 +409,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12" data-trim data-noescape><script type="text/template">
+					<pre class="" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12" data-trim data-noescape><script type="text/template">
 						internal async ValueTask RunOperation<T1>(
 							Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
 							T1 t1,
@@ -425,7 +426,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.3em"><code class="language-csharp" data-line-numbers="|4,9" data-trim data-noescape><script type="text/template">
+					<pre class="" style="font-size: 0.3em"><code class="language-csharp" data-line-numbers="|4,9" data-trim data-noescape><script type="text/template">
 						if (num1 != 0) {
 							configuredTaskAwaiter = t1._retryPolicy
 								.RunOperation<AmqpSender, CreateMessageBatchOptions, TransportMessageBatch>(
@@ -482,7 +483,7 @@
 					</ul>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+					<pre style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
 						var someState1 = new object();
 						var someOtherState = 42;
 						
@@ -539,7 +540,7 @@
 					</div>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2" data-trim data-noescape><script type="text/template">
+					<pre><code class="language-csharp" data-line-numbers="|1|2" data-trim data-noescape><script type="text/template">
 						Span<byte> guidBytes = stackalloc byte[16];
 						data.AsSpan().CopyTo(guidBytes);
 						var lockTokenGuid = new Guid(guidBytes);
@@ -614,7 +615,6 @@
 				<section data-background="img/plotter-2138990_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
-						<p>Parameter overloads and boxing</p>
 					</div>
 					<aside class="notes">
 					</aside>
