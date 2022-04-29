@@ -239,7 +239,8 @@
 						<div class="fragment fade-in"
 							style="position: absolute; left:20%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(33, 168, 100, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
 							<p><i class="fa fa-tachometer" aria-hidden="true"></i> ~20-40%<br />
-								<i class="fa fa-trash-o"></i> ~20-40%</p>
+								<i class="fa fa-trash-o"></i> ~20-40%
+							</p>
 						</div>
 						<img src="benchmarks/LinqBeforeAfterComparisonCropped.png" />
 					</div>
@@ -314,7 +315,6 @@
 						TBD
 					</aside>
 				</section>
-
 			</section>
 			<section>
 				<section data-background="img/excess-g121ed821c_1280.jpg">
@@ -458,8 +458,9 @@
 					<div style="position:relative;">
 						<div class="fragment fade-in"
 							style="position: absolute; left:20%; top:20%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(33, 168, 100, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
-							<p><i class="fa fa-tachometer" aria-hidden="true"></i> ~500%<br />
-								<i class="fa fa-trash-o"></i> ~Gone!</p>
+							<p><i class="fa fa-tachometer" aria-hidden="true"></i> ~74-78%<br />
+								<i class="fa fa-trash-o"></i> ~Gone!
+							</p>
 						</div>
 						<img src="benchmarks/NServiceBusPipelineExecutionCropped.png" />
 					</div>
@@ -504,8 +505,7 @@
 					</div>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|4" data-trim data-noescape><script type="text/template">
-						// somewhere from the network we get a guid as a byte array
+					<pre style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|3,4" data-trim data-noescape><script type="text/template">
 						var data = new ArraySegment<byte>(Guid.NewGuid().ToByteArray());
 
 						var guidBuffer = new byte[16];
@@ -514,15 +514,29 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|4" data-trim data-noescape><script type="text/template">
+					<pre style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|4" data-trim data-noescape><script type="text/template">
 						byte[] guidBuffer =  ArrayPool<byte>.Shared.Rent(16);
 						Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
 						var lockTokenGuid = new Guid(guidBuffer);
 						ArrayPool<byte>.Shared.Return(guidBuffer);
 						</script></code></pre>
 				</section>
+				<section data-background="img/time-g5afc932c4_1280.jpg">
+					<div class="image-slide-box">
+						<h2 style="text-transform: none">Benchmarking Time!</h2>
+						<p>We can only know the before and after when we measure it.</p>
+					</div>
+				</section>
 				<section>
-					<img src="benchmarks/BufferAndBlockCopyPooling.png" />
+					<div style="position:relative;">
+						<div class="fragment fade-in"
+							style="position: absolute; left:20%; top:-10%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(168, 114, 33, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
+							<p><i class="fa fa-tachometer" aria-hidden="true"></i> +226%<br />
+								<i class="fa fa-trash-o"></i> ~Gone!
+							</p>
+						</div>
+						<img src="benchmarks/BufferAndBlockCopyPooling.png" />
+					</div>
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2" data-trim data-noescape><script type="text/template">
@@ -531,8 +545,79 @@
 						var lockTokenGuid = new Guid(guidBytes);
 						</script></code></pre>
 				</section>
+				<section data-background="img/time-g5afc932c4_1280.jpg">
+					<div class="image-slide-box">
+						<h2 style="text-transform: none">Benchmarking Time!</h2>
+						<p>We can only know the before and after when we measure it.</p>
+					</div>
+				</section>
 				<section>
-					<img src="benchmarks/StackallocWithGuid.png" />
+					<div style="position:relative;">
+						<div class="fragment fade-in"
+							style="position: absolute; left:20%; top:-10%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(33, 168, 100, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
+							<p><i class="fa fa-tachometer" aria-hidden="true"></i> ~45%<br />
+								<i class="fa fa-trash-o"></i> ~Gone!
+							</p>
+						</div>
+						<img src="benchmarks/StackallocWithGuid.png" />
+					</div>
+				</section>
+			</section>
+			<section>
+				<section data-background="img/excess-g121ed821c_1280.jpg">
+					<div class="image-slide-box">
+						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
+						<p>Parameter overloads and boxing</p>
+					</div>
+					<aside class="notes">
+						Some methods have parameter overloads of type `params object[]`. That can lead to some sneaky
+						and costly array allocations that you might not even be aware of. With never incarnations of
+						.NET there have been a number of improvements done on that area by introducing new method
+						overloads for common cases that don't require to allocate a parameter array.
+					</aside>
+				</section>
+				<section data-auto-animate>
+					<code data-id="whenany-title">Task.WhenAny</code>
+					<pre data-id="whenany"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+						public static Task<Task> WhenAny(params Task[] tasks);
+						// most common case
+						await Task.WhenAny(new[] { task1, task2 });	
+						</script></code></pre>
+				</section>
+				<section data-auto-animate>
+					<code data-id="whenany-title">Task.WhenAny</code>
+					<pre data-id="whenany"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+						public static Task<Task> WhenAny(Task task1, Task task2);
+							
+						await Task.WhenAny(task1, task2);	
+						</script></code></pre>
+				</section>
+				<section data-auto-animate>
+					<code>CancellationTokenSource</code>
+					<pre data-id="tokensource" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+						public static CancellationTokenSource CreateLinkedTokenSource(
+							params CancellationToken[] tokens
+						);
+						</script></code></pre>
+				</section>
+				<section data-auto-animate>
+					<code>CancellationTokenSource</code>
+					<pre data-id="tokensource" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+						public static CancellationTokenSource CreateLinkedTokenSource(
+							CancellationToken token1,
+							CancellationToken token2
+						);
+						</script></code></pre>
+				</section>
+			</section>
+			<section>
+				<section data-background="img/plotter-2138990_1280.jpg">
+					<div class="image-slide-box">
+						<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
+						<p>Parameter overloads and boxing</p>
+					</div>
+					<aside class="notes">
+					</aside>
 				</section>
 			</section>
 		</div>

@@ -240,7 +240,8 @@ the usage of the retry policy:
 
 ```csharp
 TransportMessageBatch messageBatch = null;
-Task createBatchTask = _retryPolicy.RunOperation(async (timeout) =>
+Task createBatchTask = _retryPolicy.RunOperation(
+    async (timeout) =>
 {
     messageBatch = await CreateMessageBatchInternalAsync(options, timeout).ConfigureAwait(false);
 },
@@ -356,13 +357,12 @@ dictionary.GetOrAdd("SomeKey", static (key, state) =>
 Azure Service Bus uses the concept lock tokens (a glorified GUID) in certain modes to ackknowledge messages. For messages loaded by the client there is a this lock token that needs to be turned into a GUID representation. The existing code looked like the following:
 
 ```csharp
-// somewhere from the network we get a guid as a byte array
-var data = new ArraySegment<byte>(Guid.NewGuid().ToByteArray());
+var fromNetwork = new ArraySegment<byte>(Guid.NewGuid().ToByteArray());
 ```
 
 ```csharp
 var guidBuffer = new byte[16];
-Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
+Buffer.BlockCopy(fromNetwork.Array, fromNetwork.Offset, guidBuffer, 0, 16);
 var lockTokenGuid = new Guid(guidBuffer);
 ```
 
@@ -398,13 +398,13 @@ With the introduction of `Span<T>` and the `stackalloc` keyword we can directly 
 Some methods have parameter overloads of type `params object[]`. That can lead to some sneaky and costly array allocations that you might not even be aware of. With never incarnations of .NET there have been a number of improvements done on that area by introducing new method overloads for common cases that don't require to allocate a parameter array. For example instead of using
 
 ```csharp
-public static Task<Task> WhenAny (params Task[] tasks);
+public static Task<Task> WhenAny(params Task[] tasks);
 ```
 
 the .NET team found out the most common cases is `Task.WhenAny(new[] { task1, task2 })`. So new there is a new overload
 
 ```csharp
-public static Task<Task> WhenAny (Task task1, Task task2);
+public static Task<Task> WhenAny(Task task1, Task task2);
 ```
 
 that doesn't allocate the array anymore. Or `CancellationTokenSource.CreateLinkedTokenSource`
@@ -487,7 +487,6 @@ I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also 
 Sometimes memory copying is quite obvious to spot in code. For example the Azure Service Bus SDK had a factory method that allows to create an outgoing message from an incoming message
 
 ```csharp
-
 public class ServiceBusReceivedMessage
 {
     public BinaryData Body { get; }
@@ -507,6 +506,23 @@ public static ServiceBusMessage CreateFrom(ServiceBusReceivedMessage message)
 ```
 
 with the Azure service Bus library the message body is represented as `BinaryData` which already contains a materialized block of memory that is treated as readonly. There is no need to copy that and we can get rid of this whole code by simply assigning `message.Body` to the new message.
+
+```csharp
+public class ServiceBusReceivedMessage
+{
+    public BinaryData Body { get; }
+}
+
+public static ServiceBusMessage CreateFrom(ServiceBusReceivedMessage message)
+{
+    //...
+    var originalBody = message.Body;
+    if (!originalBody.IsEmpty)
+    {
+        copiedMessage.Body = originalBody;
+    }
+}
+```
 
 ![](benchmarks/ArrayCopy.png)
 
