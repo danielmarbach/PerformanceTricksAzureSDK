@@ -623,9 +623,11 @@
 					<ul>
 						<li>Watch out for immutable/readonly data that is copied</li>
 						<li>Look for Stream and Byte-Array usages that are copied or manipulated without using
-							<code>Span</code> or <code>Memory</code></li>
+							<code>Span</code> or <code>Memory</code>
+						</li>
 						<li>Replace existing data manipulation methods with newer <code>Span</code> or
-							<code>Memory</code> based variants</li>
+							<code>Memory</code> based variants
+						</li>
 					</ul>
 				</section>
 				<section data-auto-animate>
@@ -664,10 +666,63 @@
 						}
 						</script></code></pre>
 					<aside class="notes">
-						Other times memory copying isn't so obvious or requires a deep understand of what is happening under the hoods of the framework, library or SDK in use.
+						Other times memory copying isn't so obvious or requires a deep understand of what is happening
+						under the hoods of the framework, library or SDK in use.
 					</aside>
 				</section>
+				<section data-auto-animate>
+					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|11" data-trim data-noescape><script type="text/template">
+						private static short GenerateHashCode(string partitionKey) {
+							if (partitionKey == null) {
+								return 0;
+							}
+						
+							var encoding = Encoding.UTF8;
+							ComputeHash(encoding.GetBytes(partitionKey), 0, 0, out uint hash1, out uint hash2);
+							return (short)(hash1 ^ hash2);
+						}
+						
+						private static void ComputeHash(byte[] data, uint seed1, uint seed2, 
+							out uint hash1, out uint hash2)	{
+
+							uint a, b, c;
+						
+							a = b = c = (uint)(0xdeadbeef + data.Length + seed1);
+							c += seed2;
+						
+							int index = 0, size = data.Length;
+							while (size > 12) {
+								a += BitConverter.ToUInt32(data, index);
+								b += BitConverter.ToUInt32(data, index + 4);
+								c += BitConverter.ToUInt32(data, index + 8);
+						
+							// rest omitted
+						}
+						</script></code></pre>
+					<aside class="notes">
+						Other times memory copying isn't so obvious or requires a deep understand of what is happening
+						under the hoods of the framework, library or SDK in use.
+					</aside>
+				</section>
+				<section data-background="img/time-g5afc932c4_1280.jpg">
+					<div class="image-slide-box">
+						<h2 style="text-transform: none">Benchmarking Time!</h2>
+						<p>We can only know the before and after when we measure it.</p>
+					</div>
+				</section>
+				<section>
+					<div style="position:relative;">
+						<div class="fragment fade-in"
+							style="position: absolute; left:17%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(33, 168, 100, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
+							<p><i class="fa fa-tachometer" aria-hidden="true"></i> ~38-47%<br />
+								<i class="fa fa-trash-o"></i> ~Gone!
+							</p>
+						</div>
+						<img src="benchmarks/PartitionKeyResolver.png" />
+					</div>
+				</section>
 			</section>
+
 		</div>
 	</div>
 
