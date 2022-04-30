@@ -484,6 +484,12 @@ private unsafe void WriteEventImproved<TValue>(int eventId,
 
 I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also with the `in` parameter modifiers and `readonly struct` we can minimize the amount of copying required when operating various chunks of memory. `Span<T>` is a value type that enables the representation of contiguous regions of arbitrary memory, regardless of whether that memory is associated with a managed object, is provided by native code via interop, or is on the stack. Internally, it is a pointer to a memory location and a length to represent the length of the memory represented by the span. One of the other benefits `Span<T>` provides that because it can be "sliced" into various chunks, you can represent various slices of memory of variable length without having to copy the memory. `Span<T>` can only live on the stack while its cousin `Memory<T>` can live on the heap and therefore be used in asynchronous methods.
 
+There are a few general rules we can follow to discover and rework existing code paths that copy memory unnecessarily:
+
+- Watch out for immutable/readonly data that is copied
+- Look for Stream and Byte-Array usages that are copied or manipulated without using `Span` or `Memory`
+- Replace existing data manipulation methods with newer `Span` or `Memory` based variants
+
 Sometimes memory copying is quite obvious to spot in code. For example, the Azure Service Bus SDK had a factory method that allows to create an outgoing message from an incoming message
 
 ```csharp

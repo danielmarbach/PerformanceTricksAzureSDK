@@ -619,6 +619,54 @@
 					<aside class="notes">
 					</aside>
 				</section>
+				<section>
+					<ul>
+						<li>Watch out for immutable/readonly data that is copied</li>
+						<li>Look for Stream and Byte-Array usages that are copied or manipulated without using
+							<code>Span</code> or <code>Memory</code></li>
+						<li>Replace existing data manipulation methods with newer <code>Span</code> or
+							<code>Memory</code> based variants</li>
+					</ul>
+				</section>
+				<section data-auto-animate>
+					<pre data-id="body-copy" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|11-12" data-trim data-noescape><script type="text/template">
+						public class ServiceBusReceivedMessage {
+							public BinaryData Body { get; }
+						}
+						
+						public static ServiceBusMessage 
+							CreateFrom(ServiceBusReceivedMessage message) {
+							//...
+							var originalBody = message.Body;
+							if (!originalBody.IsEmpty)
+							{
+								var clonedBody = new byte[originalBody.Length];
+								Array.Copy(originalBody.ToArray(), clonedBody, originalBody.Length);
+								copiedMessage.Body = clonedBody;
+							}
+						}
+						</script></code></pre>
+				</section>
+				<section data-auto-animate>
+					<pre data-id="body-copy" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|11" data-trim data-noescape><script type="text/template">
+						public class ServiceBusReceivedMessage {
+							public BinaryData Body { get; }
+						}
+						
+						public static ServiceBusMessage 
+							CreateFrom(ServiceBusReceivedMessage message) {
+							//...
+							var originalBody = message.Body;
+							if (!originalBody.IsEmpty)
+							{
+								copiedMessage.Body = originalBody;
+							}
+						}
+						</script></code></pre>
+					<aside class="notes">
+						Other times memory copying isn't so obvious or requires a deep understand of what is happening under the hoods of the framework, library or SDK in use.
+					</aside>
+				</section>
 			</section>
 		</div>
 	</div>
