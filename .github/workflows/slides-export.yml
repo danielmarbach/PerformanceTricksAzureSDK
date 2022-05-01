@@ -14,19 +14,15 @@ jobs:
 
     name: Generate PDF
     steps:
+      - name: Git checkout
+        uses: actions/checkout@v1
+
       - name: Create "/slides" directory
         run: mkdir slides && sudo chmod 777 slides
-        
-      - name: Download file   
-        run: curl -O https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
-        
+                
       - name: Build pdfs   
         run:  
-          docker run --rm -t -v `pwd`:/slides -v ~:/home/user astefanutti/decktape reveal index.html slides/presentation.pdf -s 1920x1080
-          
-      - name: Remove file
-        run:
-         rm index.html
+          docker run --rm -t -v `pwd`:/ -v ~:/home/user astefanutti/decktape reveal index.html slides/presentation.pdf -s 1920x1080
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
