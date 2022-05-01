@@ -19,7 +19,7 @@ jobs:
         
       - name:  Build pdfs   
         run:  
-          docker run --rm -t -v `pwd`:/slides -v ~:/home/user astefanutti/decktape revealjs https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html slides/presentation.pdf -s 1920x1080
+          docker run --rm -t -v `pwd`:/slides -v ~:/home/user astefanutti/decktape reveal https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html slides/presentation.pdf -s 1920x1080
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
