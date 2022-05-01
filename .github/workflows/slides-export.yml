@@ -1,11 +1,5 @@
-# Workflow from https://4comprehension.com/github-actions-reveal-js-and-automating-pdf-conversion/
-# using Decktape https://github.com/astefanutti/decktape
-# another option is https://github.com/bellbind/remarkjs-pdf
 name: Create-PDF
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
   push:
     branches: 
       - main
