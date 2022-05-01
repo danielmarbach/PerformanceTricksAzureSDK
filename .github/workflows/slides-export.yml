@@ -1,0 +1,34 @@
+name: Slides-Export
+on:
+  push:
+    branches: 
+      - main
+    paths:
+      - '*.html'
+      
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    name: Generate PDF
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v1
+        
+      - run: npm install -g decktape
+
+      - name: Create "/slides" directory
+        run: mkdir slides && sudo chmod 777 slides
+                
+      - name: Build pdfs   
+        run: decktape reveal index.html slides/presentation.pdf -s 1920x1080
+      
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./slides
+          publish_branch: main
+          keep_files: true
