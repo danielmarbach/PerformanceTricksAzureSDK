@@ -17,9 +17,16 @@ jobs:
       - name: Create "/slides" directory
         run: mkdir presentation-pdfs && sudo chmod 777 presentation-pdfs
         
+      - name:  Download file   
+        run: curl -o slides/index.html https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
+        
       - name:  Build pdfs   
         run:  
-          docker run --rm -t -v `pwd`:/slides -v ~:/home/user astefanutti/decktape reveal https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html slides/presentation.pdf -s 1920x1080
+          docker run --rm -t -v `pwd`:/slides -v ~:/home/user astefanutti/decktape reveal index.html slides/presentation.pdf -s 1920x1080
+          
+      - name: Remove list of files
+        run:
+         rm index.html
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
