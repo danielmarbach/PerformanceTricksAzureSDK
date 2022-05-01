@@ -23,7 +23,7 @@ jobs:
         run: mkdir ./slides && sudo chmod 777 ./slides
                 
       - name: Build pdfs   
-        run: decktape reveal index.html ./slides/presentation.pdf -s 1920x1080
+        run: decktape reveal index.html ./slides/presentation.pdf -s 1920x1080 --slides 1
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
