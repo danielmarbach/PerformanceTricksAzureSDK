@@ -1,11 +1,6 @@
 name: Slides-Export
 on:
-  push:
-    branches: 
-      - main
-    paths:
-      - '*.html'
-      
+
   workflow_dispatch:
 
 jobs:
