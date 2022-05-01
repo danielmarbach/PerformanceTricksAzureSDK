@@ -4,6 +4,9 @@ As a practical learner, I've found that performance optimizations have been my b
 
 Over the past few years, I've contributed over fifty pull requests to the Azure .NET SDK and some of them got accepted. In this session, I'll walk you through the performance improvements I learned from my experiments. Some “superpowers” you will learn are spotting closure allocations and opportunities for memory pooling and, best of all, how to improve them. 
 
+- [Slides Online](https://danielmarbach.github.io/PerformanceTricksAzureSDK)
+- [Slides PDF](/slides/presentation.pdf)
+
 ## Introduction
 
 In this talk, I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. The focus is purely on code with examples in CSharp. .NET has been evolving over the years into a modern and high-performance platform. The languages running on .NET have also been improving and allowing to fall to lower levels without giving up on the safety guarantees too much or only where it is really needed. It is less and less needed to use unmanaged languages like C/C++ to achieve code that performs well at scale.
