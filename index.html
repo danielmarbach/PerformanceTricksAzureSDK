@@ -98,7 +98,7 @@
 					<h2 class="r-fit-text" data-id="thumb">Rules of thumb</h2>
 				</section>
 				<section data-auto-animate>
-					<ul>
+					<ul class="r-fit-text">
 						<li data-id="allocations">Avoid excessive allocations to reduce the GC overhead</li>
 						<ul>
 							<li class="fragment fade-in">Be aware of closure allocations</li>
@@ -110,7 +110,17 @@
 							<li class="fragment fade-in">Pool and re-use buffers</li>
 							<li class="fragment fade-in">For smaller local buffers, consider using the stack</li>
 						</ul>
-						<li data-id="copying">Avoid unnecessary copying of memory</li>
+						<li data-id="copying">Avoid unnecessary copying of memory
+							<ul>
+								<li class="fragment fade-in">Watch out for immutable/readonly data that is copied</li>
+								<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or manipulated without using
+									<code>Span</code> or <code>Memory</code>
+								</li>
+								<li class="fragment fade-in">Replace existing data manipulation methods with newer <code>Span</code> or
+									<code>Memory</code> based variants
+								</li>
+							</ul>
+						</li>
 					</ul>
 				</section>
 			</section>
@@ -670,7 +680,7 @@
 						under the hoods of the framework, library or SDK in use.
 					</aside>
 				</section>
-				<section data-auto-animate>
+				<section>
 					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|11" data-trim data-noescape><script type="text/template">
 						private static short GenerateHashCode(string partitionKey) {
 							if (partitionKey == null) {
@@ -704,6 +714,45 @@
 						under the hoods of the framework, library or SDK in use.
 					</aside>
 				</section>
+				<section>
+					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|10|7,14-16|18-19|16,23-25|29|1,15" data-trim data-noescape><script type="text/template">
+						[SkipLocalsInit]
+						private static short GenerateHashCode(string partitionKey) {
+							if (partitionKey == null) {
+								return 0;
+							}
+						
+							const int MaxStackLimit = 256;
+						
+							byte[] sharedBuffer = null;
+							var partitionKeySpan = partitionKey.AsSpan();
+							var encoding = Encoding.UTF8;
+						
+							var partitionKeyByteLength = encoding.GetMaxByteCount(partitionKey.Length);
+							var hashBuffer = partitionKeyByteLength <= MaxStackLimit ?
+								stackalloc byte[MaxStackLimit] :
+								sharedBuffer = ArrayPool<byte>.Shared.Rent(partitionKeyByteLength);
+						
+							var written = encoding.GetBytes(partitionKeySpan, hashBuffer);
+							var slicedBuffer = hashBuffer.Slice(0, written);
+
+							ComputeHash(slicedBuffer, 0, 0, out uint hash1, out uint hash2);
+
+							if (sharedBuffer != null) {
+								ArrayPool<byte>.Shared.Return(sharedBuffer);
+							}
+							return (short)(hash1 ^ hash2);
+						}
+
+						private static void ComputeHash(ReadonlySpan<byte> data, uint seed1, uint seed2, 
+							out uint hash1, out uint hash2)	{
+							// rest omitted
+						}
+						</script></code></pre>
+					<aside class="notes">
+						TBD
+					</aside>
+				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Benchmarking Time!</h2>
@@ -720,6 +769,43 @@
 						</div>
 						<img src="benchmarks/PartitionKeyResolver.png" />
 					</div>
+				</section>
+				<section>
+					<ul class="r-fit-text">
+						<li>Avoid excessive allocations to reduce the GC overhead</li>
+						<ul>
+							<li>Be aware of closure allocations</li>
+							<li>Be aware of parameter overloads</li>
+							<li>Where possible and feasible use value types <br />but pay
+								attention to unnecessary boxing</li>
+							<li>Think at least twice before using LINQ <br /> or
+								unnecessary enumeration on the hot path</li>
+							<ul>
+								<li>Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
+								</li>
+								<li>Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
+									enumerables</li>
+								<li>Prevent collections from growing</li>
+								<li>Use concrete collection types</li>
+								<li>Leverage pattern matching or
+									<code>Enumerable.TryGetNonEnumeratedCount</code>
+								</li>
+							</ul>
+							<li>Pool and re-use buffers</li>
+							<li>For smaller local buffers, consider using the stack</li>
+						</ul>
+						<li>Avoid unnecessary copying of memory
+							<ul>
+								<li>Watch out for immutable/readonly data that is copied</li>
+								<li>Look for Stream and Byte-Array usages that are copied or manipulated without using
+									<code>Span</code> or <code>Memory</code>
+								</li>
+								<li>Replace existing data manipulation methods with newer <code>Span</code> or
+									<code>Memory</code> based variants
+								</li>
+							</ul>
+						</li>
+					</ul>
 				</section>
 			</section>
 
