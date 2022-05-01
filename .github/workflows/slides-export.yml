@@ -17,14 +17,13 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v1
         
-      - run: npm install
+      - run: npm install -g decktape
 
       - name: Create "/slides" directory
         run: mkdir slides && sudo chmod 777 slides
                 
       - name: Build pdfs   
-        run:  
-          npm bin`/decktape reveal index.html slides/presentation.pdf -s 1920x1080
+        run: decktape reveal index.html slides/presentation.pdf -s 1920x1080
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
