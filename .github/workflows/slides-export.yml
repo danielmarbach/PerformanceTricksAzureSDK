@@ -18,7 +18,7 @@ jobs:
         run: mkdir slides && sudo chmod 777 slides
         
       - name: Download file   
-        run: curl https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
+        run: curl -O https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
         
       - name: Build pdfs   
         run:  
