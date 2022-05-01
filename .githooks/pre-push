@@ -1,0 +1,20 @@
+#!/bin/bash
+# drop this in .git/hooks/, and chmod +x .git/hooks/pre-push
+
+# store current branch
+cur_branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ $cur_branch == "gh-pages" ]]
+then
+    # bail out if we're trying to push the gh-pages branch (to prevent infinite loop)
+    exit 0
+else
+    # merge current branch into gh-pages
+    git checkout gh-pages
+    git merge -m 'automatic pre-push merge' $cur_branch
+    # push gh-pages
+    git push origin gh-pages
+    # switch back and exit
+    git checkout $cur_branch
+fi
+exit 0
+
