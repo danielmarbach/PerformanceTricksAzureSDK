@@ -1,4 +1,4 @@
-name: Create-PDF
+name: Slides-Export
 on:
   push:
     branches: 
@@ -17,10 +17,10 @@ jobs:
       - name: Create "/slides" directory
         run: mkdir slides && sudo chmod 777 slides
         
-      - name:  Download file   
-        run: curl -o slides/index.html https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
+      - name: Download file   
+        run: curl https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
         
-      - name:  Build pdfs   
+      - name: Build pdfs   
         run:  
           docker run --rm -t -v `pwd`:/slides -v ~:/home/user astefanutti/decktape reveal index.html slides/presentation.pdf -s 1920x1080
           
