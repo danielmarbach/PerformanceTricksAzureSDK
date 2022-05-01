@@ -18,7 +18,7 @@ jobs:
         run: mkdir presentation-pdfs && sudo chmod 777 presentation-pdfs
         
       - name:  Download file   
-        run: curl -o slides/index.html https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
+        run: curl https://raw.githubusercontent.com/danielmarbach/PerformanceTricksAzureSDK/main/index.html
         
       - name:  Build pdfs   
         run:  
