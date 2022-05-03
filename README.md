@@ -208,7 +208,7 @@ let's see how this code behaves under various inputs passed as `IEnumerable<stri
 
 while we managed to get some additional savings in terms of allocations over some collection types, we can see actually passing an enumerable that gets lazy enumerated is behaving much worse than our first simple optimization. Is that an indication we shouldn't be doing such a refactoring? Well it depends. If the code path in question is executed under huge load and you have a good enough understanding of the types passed to the method, it might be worth doing the optimization. Otherwise, probably not, and readability should be the key driver instead of trying to gold plate every part of the code base. It is quite likely you have other areas in your code that are slowing things down way more. Fire up your favorite memory and performance profiler and get a better understanding. Once you have tweaked those other paths and these once start to come up, you have some good guidelines above that will help you squeeze every last speed improvement out of it.
 
-Like with all things, it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is crucial.
+Like with all things, it is crucial to know when to stop on a given code path and find other areas that are more impactful to optimize. The context of the piece of code that you are trying to optimize is key.
 
 ### Be aware of closure allocations
 

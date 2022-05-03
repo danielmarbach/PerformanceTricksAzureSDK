@@ -40,6 +40,7 @@
 					<aside class="notes">
 						<ul>
 							<li>Not about horizontal and vertical scaling</li>
+							<li>.NET has been evolving over the years into a modern and high-performance platform.</li>
 							<li>C/C++ is less and less needed</li>
 						</ul>
 					</aside>
@@ -110,10 +111,12 @@
 						<li data-id="copying">Avoid unnecessary copying of memory
 							<ul>
 								<li class="fragment fade-in">Watch out for immutable/readonly data that is copied</li>
-								<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or manipulated without using
+								<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or
+									manipulated without using
 									<code>Span</code> or <code>Memory</code>
 								</li>
-								<li class="fragment fade-in">Replace existing data manipulation methods with newer <code>Span</code> or
+								<li class="fragment fade-in">Replace existing data manipulation methods with newer
+									<code>Span</code> or
 									<code>Memory</code> based variants
 								</li>
 							</ul>
@@ -164,7 +167,7 @@
 					</aside>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|8-9|10" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|8-9|10,17" data-trim data-noescape><script type="text/template">
 							public class AmqpReceiver {
 	
 								// ...
@@ -181,14 +184,15 @@
 								[CompilerGenerated]
 								private bool <CompleteInternalAsync>b__2_1(Guid lockToken)
 								{
-									return Enumerable.Contains(_requestResponseLockedMessages, lockToken);
+									return Enumerable.Contains(_lockedMessages, lockToken);
 								}
 							}
 						</script></code></pre>
 					<aside class="notes">
 						For every call of CompleteInternalAsync a new instance of Func&lt;Guid, bool&gt; is allocated
 						that points to &lt;CompleteInternalAsync&gtb__2_1. A closure captures the _lockedMessages and
-						the lockToken as state.
+						the lockToken as state.<br />
+						It is possible to simply turn the Any into a loop.
 					</aside>
 				</section>
 				<section>
@@ -270,6 +274,11 @@
 							<code>Enumerable.TryGetNonEnumeratedCount</code>
 						</li>
 					</ul>
+					<aside class="notes">
+						Going back to the previous example that we have optimized already quite a bit, let's see how we
+						can apply those principles we learned above to the code. As a reminder here is how the code
+						looks like.
+					</aside>
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
@@ -322,6 +331,33 @@
 						TBD
 					</aside>
 				</section>
+				<section data-background="img/time-g5afc932c4_1280.jpg">
+					<div class="image-slide-box">
+						<h2 style="text-transform: none">Benchmarking Time!</h2>
+						<p>We can only know the before and after when we measure it.</p>
+					</div>
+				</section>
+				<section>
+					<div style="position:relative;">
+						<div class="fragment fade-in"
+							style="position: absolute; left:20%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(155, 168, 33, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
+							<p><i class="fa fa-tachometer" aria-hidden="true"></i> ~5-64% (worst +56%)<br />
+								<i class="fa fa-trash-o"></i> ~23-61%
+							</p>
+						</div>
+						<img src="benchmarks/LinqAfterComparisonCropped.png" />
+					</div>
+					<aside class="notes">
+						<ul>
+							<li>Lazy enumeration is much worse.</li>
+							<li> Is that an indication we shouldn't be doing such a refactoring?</li>
+							<li>Well it depends</li>
+							<li>Like with all things, it is crucial to know when to stop on a given code path and find
+								other areas that are more impactful to optimize. The context of the piece of code that
+								you are trying to optimize is key.</li>
+						</ul>
+					</aside>
+				</section>
 			</section>
 			<section>
 				<section data-background="img/excess-g121ed821c_1280.jpg">
@@ -336,7 +372,7 @@
 					</aside>
 				</section>
 				<section>
-					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2|13" data-trim data-noescape><script type="text/template">
 						async Task RunOperation(
 							Func<TimeSpan, Task> operation, 
 							TransportConnectionScope scope, CancellationToken cancellationToken) 
@@ -629,10 +665,12 @@
 				<section>
 					<ul>
 						<li class="fragment fade-in">Watch out for immutable/readonly data that is copied</li>
-						<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or manipulated without using
+						<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or
+							manipulated without using
 							<code>Span</code> or <code>Memory</code>
 						</li>
-						<li class="fragment fade-in">Replace existing data manipulation methods with newer <code>Span</code> or
+						<li class="fragment fade-in">Replace existing data manipulation methods with newer
+							<code>Span</code> or
 							<code>Memory</code> based variants
 						</li>
 					</ul>
@@ -814,14 +852,17 @@
 				</section>
 				<section data-background="img/science-1182713_1280.jpg">
 					<div
-					style="width: 70%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.8); color: rgb(255, 255, 255); padding: 25px; font-size: 25px; text-align: left;">
-					<h5>At Scale implementation details matter</h5>
-					<div>
-						<p>Sometimes that will mean ignoring the performance optimizations learned here in the code bases they don't matter, yet consistently applying them where they do</p>
-						<p><a href="github.com/danielmarbach/PerformanceTricksAzureSDK">github.com/danielmarbach/PerformanceTricksAzureSDK</a></p>
-						<p>Happy coding!</p>
+						style="width: 70%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.8); color: rgb(255, 255, 255); padding: 25px; font-size: 25px; text-align: left;">
+						<h5>At Scale implementation details matter</h5>
+						<div>
+							<p>Sometimes that will mean ignoring the performance optimizations learned here in the code
+								bases they don't matter, yet consistently applying them where they do</p>
+							<p><a
+									href="github.com/danielmarbach/PerformanceTricksAzureSDK">github.com/danielmarbach/PerformanceTricksAzureSDK</a>
+							</p>
+							<p>Happy coding!</p>
+						</div>
 					</div>
-				</div>
 					<aside class="notes">
 					</aside>
 				</section>
