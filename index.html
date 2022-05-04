@@ -384,7 +384,7 @@
 								part of the code base</li>
 							<li>There are likely other areas that are slowing things down more. </li>
 							<li>Fire up your favorite memory and performance profiler and get a better understanding
-							</li>>
+							</li>
 							<li>Like with all things, it is crucial to know when to stop on a given code path and find
 								other areas that are more impactful to optimize. The context of the piece of code that
 								you are trying to optimize is key.</li>
@@ -630,7 +630,7 @@
 						ArrayPool<byte>.Shared.Return(guidBuffer);
 						</script></code></pre>
 					<aside class="notes">
-						.NET has a built-in mechanism called ArrayPool<T> that allows to have pooled arrays that can be
+						.NET has a built-in mechanism called ArrayPool&lt;T&gt; that allows to have pooled arrays that can be
 							reused.
 					</aside>
 				</section>
@@ -664,7 +664,7 @@
 						var lockTokenGuid = new Guid(guidBytes);
 						</script></code></pre>
 					<aside class="notes">
-						With the introduction of Span<T> and the stackalloc keyword, we can directly allocate the memory
+						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the memory
 							on the method's stack that is cleared when the method returns.
 					</aside>
 				</section>
@@ -867,7 +867,7 @@
 						</script></code></pre>
 				</section>
 				<section>
-					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|10|7,14-16|18-19|16,23-25|29|1,15" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|10|13|7,13-16|18-19|16,23-25|29|1,15" data-trim data-noescape><script type="text/template">
 						[SkipLocalsInit]
 						private static short GenerateHashCode(string partitionKey) {
 							if (partitionKey == null) {
