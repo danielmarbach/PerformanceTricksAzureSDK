@@ -38,7 +38,7 @@ A good way to explore what scale means is to discover the assumptions that have 
 
 ### Think at least twice before using LINQ or unnecessary enumeration on the hot path
 
-LINQ is great, and I wouldn't want to miss it at all. Yet, on the hot path it is far too easy to get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT to optimize. Let's look at a piece of code from the `AmqpReceiver`
+LINQ is great, and I wouldn't want to miss it at all. Yet, on the hot path it is far too easy to get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT to optimize. Let's look at a piece of code from the `AmqpReceiver` (The "driver" behind Service Bus and Event Hub Message/Event receival)
 
 ```csharp
 public class AmqpReceiver 
@@ -485,7 +485,7 @@ private unsafe void WriteEventImproved<TValue>(int eventId,
 
 ## Avoid unnecessary copying of memory
 
-I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also with the `in` parameter modifiers and `readonly struct` we can minimize the amount of copying required when operating various chunks of memory. `Span<T>` is a value type that enables the representation of contiguous regions of arbitrary memory, regardless of whether that memory is associated with a managed object, is provided by native code via interop, or is on the stack. Internally, it is a pointer to a memory location and a length to represent the length of the memory represented by the span. One of the other benefits `Span<T>` provides that because it can be "sliced" into various chunks, you can represent various slices of memory of variable length without having to copy the memory. `Span<T>` can only live on the stack while its cousin `Memory<T>` can live on the heap and therefore be used in asynchronous methods.
+I've already hinted at `Span<T>` in the previous parts. With `Span<T>` but also with the `in` parameter modifiers and `readonly struct` we can minimize the amount of copying required when operating on various chunks of memory. `Span<T>` is a value type that enables the representation of contiguous regions of arbitrary memory, regardless of whether that memory is associated with a managed object, is provided by native code via interop, or is on the stack. Internally, it is a pointer to a memory location and a length to represent the length of the memory represented by the span. One of the other benefits `Span<T>` provides that because it can be "sliced" into various chunks, you can represent various slices of memory of variable length without having to copy the memory. `Span<T>` can only live on the stack while its cousin `Memory<T>` can live on the heap and therefore be used in asynchronous methods.
 
 There are a few general rules we can follow to discover and rework existing code paths that copy memory unnecessarily:
 

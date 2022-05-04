@@ -43,9 +43,10 @@
 					</div>
 					<aside class="notes">
 						<ul>
+							<li>Performance optimizations that can be done in code</li>
 							<li>Not about horizontal and vertical scaling</li>
 							<li>.NET has been evolving over the years into a modern and high-performance platform.</li>
-							<li>C/C++ is less and less needed</li>
+							<li>C/C++ is less and less needed to achieve code that performs well at scale</li>
 						</ul>
 					</aside>
 				</section>
@@ -59,6 +60,10 @@
 							<li>Don't jump to conclusions and apply them blindly.</li>
 							<li>Code executed under scale it matters: More efficient in resource usage, execution time,
 								throughput and memory usage</li>
+							<li>"Wow, that's crazy, is the complexity of this change really worth it? Isn't that
+								premature optimization?" </li>
+							<li>Performance improvements can be addictive, nobody likes to optimize code that is fast
+								enough or only executed once a day.</li>
 							<li>But what does at scale even mean? How can I find out whether the optimizations I'm
 								trying to make have value, and I'm not getting called out by my colleagues for premature
 								optimizations?</li>
@@ -86,6 +91,8 @@
 						<li>Pay close attention to what is instantiated, parsed, processed etc. per request</li>
 						<li>How those assumptions in the code base affect the performance characteristics (memory,
 							throughput...) at scale</li>
+						<li>As developers and engineers we want rules that we can apply. Or like Boris from Goldeneye
+							says: Give me the code natalia.</li>
 					</ul>
 				</aside>
 			</section>
@@ -137,7 +144,8 @@
 					<aside class="notes">
 						LINQ is great, and I wouldn't want to miss it at all. Yet, on the hot path it is far too easy to
 						get into troubles with LINQ because it can cause hidden allocations and is difficult for the JIT
-						to optimize. Let's look at a piece of code from the AmqpReceiver
+						to optimize. Let's look at a piece of code from the AmqpReceiver (The "driver" behind Service
+						Bus and Event Hub Message/Event receival)
 					</aside>
 				</section>
 				<section>
@@ -164,8 +172,8 @@
 						</script></code></pre>
 					<aside class="notes">
 						<ul>
-							<li>Explain AmqpReceiver</li>
-							<li>Enumerable, string to guid, Any with contains</li>
+							<li>Enumerable (broadest type according to SDK guidelines), string to guid, Any with
+								contains</li>
 							<li>Decompile</li>
 						</ul>
 					</aside>
@@ -195,7 +203,7 @@
 					<aside class="notes">
 						For every call of CompleteInternalAsync a new instance of Func&lt;Guid, bool&gt; is allocated
 						that points to &lt;CompleteInternalAsync&gtb__2_1. A closure captures the _lockedMessages and
-						the lockToken as state.<br />
+						the lockToken as state. This allocation is unnecessary.<br />
 						It is possible to simply turn the Any into a loop.
 					</aside>
 				</section>
@@ -217,6 +225,9 @@
 							return Task.CompletedTask;
 						}
 						</script></code></pre>
+					<aside class="notes">
+						This gets then compiled down to.
+					</aside>
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6-8" data-trim data-noescape><script type="text/template">
@@ -262,8 +273,10 @@
 					<aside class="notes">
 						By getting rid of the Any we were able to squeeze out some good performance improvements.
 						Sometimes, though, we can do even more. For example, there are a few general rules we can follow
-						when we refactor a code path using LINQ to collection-based operations.
+						when we refactor a code path using LINQ to collection-based operations. Or as Boris would say.
 					</aside>
+				</section>
+				<section data-background-video="vids/Give-me-the-code-natalia.mp4">
 				</section>
 				<section>
 					<h2 class="r-fit-text" data-id="thumb">LINQ to collection-based operations</h2>
@@ -302,6 +315,12 @@
 							return Task.CompletedTask;
 						}
 						</script></code></pre>
+					<aside class="notes">
+						In order to know which of these principles we can apply we have to be aware of what collection
+						types are usually passed as parameters to the CompleteAsync method. In the .NET Azure SDK the
+						lockTokens enumerable is almost always an already materialized collection type that implements
+						IReadOnlyCollection (context)
+					</aside>
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|2-6|10|12-13|17-18" data-trim data-noescape><script type="text/template">
@@ -332,7 +351,11 @@
 						}
 						</script></code></pre>
 					<aside class="notes">
-						TBD
+						The internal method signature has to be changed to accept a parameter of type
+						IReadOnlyCollection. For the empty case we can directly use the empty array and in the other
+						cases we use an array. Because we have the count available, the array can be properly
+						initialized with the desired count (if we'd be using lists this would be even more important
+						because lists can automatically grow which can allocate a lot and takes time).
 					</aside>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
@@ -354,8 +377,14 @@
 					<aside class="notes">
 						<ul>
 							<li>Lazy enumeration is much worse.</li>
-							<li> Is that an indication we shouldn't be doing such a refactoring?</li>
+							<li>Is that an indication we shouldn't be doing such a refactoring?</li>
 							<li>Well it depends</li>
+							<li>If you know what is passed into it it might be a good optimization.</li>
+							<li>Otherwise readability should be the key driver instead of trying to gold plate every
+								part of the code base</li>
+							<li>There are likely other areas that are slowing things down more. </li>
+							<li>Fire up your favorite memory and performance profiler and get a better understanding
+							</li>>
 							<li>Like with all things, it is crucial to know when to stop on a given code path and find
 								other areas that are more impactful to optimize. The context of the piece of code that
 								you are trying to optimize is key.</li>
@@ -398,6 +427,10 @@
 							}
 						}
 						</script></code></pre>
+					<aside class="notes">
+						Retry method from the ServiceBus SDK that retries operations on certain server failure scenarios
+						(like RetryAfter when busy).
+					</aside>
 				</section>
 				<section>
 					<pre class="" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1,4-5" data-trim data-noescape><script type="text/template">
@@ -412,6 +445,10 @@
 						await createBatchTask;
 						return messageBatch;
 						</script></code></pre>
+					<aside class="notes">
+						Notice the message batch local is captured as well as the options instance.
+						Decompile the code.
+					</aside>
 				</section>
 				<section>
 					<pre class="" style="font-size: 0.43em"><code class="language-csharp" data-line-numbers="|2,8" data-trim data-noescape><script type="text/template">
@@ -454,6 +491,13 @@
 							}
 						}
 						</script></code></pre>
+					<aside class="notes">
+						We can augment this code to accept an input T1 and return an output. The input argument or state
+						is then passed into the operation method.
+						With that trick we can build a library tool that allows to deal with functions that return state
+						as well as actions that return nothing. Essentailly properly modelling void to make functional
+						programmers happy.
+					</aside>
 				</section>
 				<section>
 					<pre class="" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12" data-trim data-noescape><script type="text/template">
@@ -471,6 +515,17 @@
 							(t1, operation),
 							scope, cancellationToken);
 						</script></code></pre>
+					<aside class="notes">
+						<ul>
+							<li>Switch to ValueTask because some operations returned value tasks</li>
+							<li>Use CSharp 9 static lambda features to make it impossible to access state within the
+								delegate that is outside</li>
+							<li>Use the state argument to pass in the state from the method including the operation as a
+								value tuple into the function</li>
+							<li>Deconstruct the value tuple and execute the operation passing all necessary state to it.
+							</li>
+						</ul>
+					</aside>
 				</section>
 				<section>
 					<pre class="" style="font-size: 0.3em"><code class="language-csharp" data-line-numbers="|4,9" data-trim data-noescape><script type="text/template">
@@ -560,6 +615,12 @@
 						Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
 						var lockTokenGuid = new Guid(guidBuffer);
 						</script></code></pre>
+					<aside class="notes">
+						Azure Service Bus uses the concept of lock tokens (a glorified GUID) in certain modes to
+						acknowledge messages. For messages loaded by the client, there is a lock token that needs to be
+						turned into a GUID representation. When receiving lots of messages this creates countless
+						unnecessary allocations.
+					</aside>
 				</section>
 				<section>
 					<pre style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|4" data-trim data-noescape><script type="text/template">
@@ -568,6 +629,10 @@
 						var lockTokenGuid = new Guid(guidBuffer);
 						ArrayPool<byte>.Shared.Return(guidBuffer);
 						</script></code></pre>
+					<aside class="notes">
+						.NET has a built-in mechanism called ArrayPool<T> that allows to have pooled arrays that can be
+							reused.
+					</aside>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
@@ -585,6 +650,12 @@
 						</div>
 						<img src="benchmarks/BufferAndBlockCopyPooling.png" />
 					</div>
+					<aside class="notes">
+						It turns out while we are saving allocations now we haven't really made things much better
+						overall since the code now takes more than double the time to execute. It might very well be
+						that this is an acceptable tradeoff for library or framework you are building. That being said,
+						we can do better.
+					</aside>
 				</section>
 				<section>
 					<pre><code class="language-csharp" data-line-numbers="|1|2" data-trim data-noescape><script type="text/template">
@@ -592,6 +663,10 @@
 						data.AsSpan().CopyTo(guidBytes);
 						var lockTokenGuid = new Guid(guidBytes);
 						</script></code></pre>
+					<aside class="notes">
+						With the introduction of Span<T> and the stackalloc keyword, we can directly allocate the memory
+							on the method's stack that is cleared when the method returns.
+					</aside>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
@@ -609,6 +684,11 @@
 						</div>
 						<img src="benchmarks/StackallocWithGuid.png" />
 					</div>
+					<aside class="notes">
+						Be ware to not overallocate on the stack. This can lead to nasty problems at runtime. When
+						allocating a certain size sometimes it is better to also skip locals init. We will be talking
+						about that later.
+					</aside>
 				</section>
 			</section>
 			<section>
@@ -658,26 +738,35 @@
 						</script></code></pre>
 				</section>
 			</section>
+			<section data-background="img/plotter-2138990_1280.jpg">
+				<div class="image-slide-box">
+					<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
+				</div>
+				<aside class="notes">
+					We want rules I know. Or how boris would say
+				</aside>
+			</section>
+			<section data-background-video="vids/Give-me-the-code-natalia.mp4">
+			</section>
+			<section>
+				<ul>
+					<li class="fragment fade-in">Watch out for immutable/readonly data that is copied</li>
+					<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or
+						manipulated without using
+						<code>Span</code> or <code>Memory</code>
+					</li>
+					<li class="fragment fade-in">Replace existing data manipulation methods with newer
+						<code>Span</code> or
+						<code>Memory</code> based variants
+					</li>
+				</ul>
+			</section>
 			<section>
 				<section data-background="img/plotter-2138990_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
+						<p>Watch out for immutable/readonly data that is copied</p>
 					</div>
-					<aside class="notes">
-					</aside>
-				</section>
-				<section>
-					<ul>
-						<li class="fragment fade-in">Watch out for immutable/readonly data that is copied</li>
-						<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or
-							manipulated without using
-							<code>Span</code> or <code>Memory</code>
-						</li>
-						<li class="fragment fade-in">Replace existing data manipulation methods with newer
-							<code>Span</code> or
-							<code>Memory</code> based variants
-						</li>
-					</ul>
 				</section>
 				<section data-auto-animate>
 					<pre data-id="body-copy" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|11-12" data-trim data-noescape><script type="text/template">
@@ -715,8 +804,36 @@
 						}
 						</script></code></pre>
 					<aside class="notes">
-						Other times memory copying isn't so obvious or requires a deep understand of what is happening
+						Other times memory copying isn't so obvious or requires a deep understand of what is
+						happening
 						under the hoods of the framework, library or SDK in use.
+					</aside>
+				</section>
+			</section>
+			<section>
+				<section data-background="img/plotter-2138990_1280.jpg">
+					<div class="image-slide-box">
+						<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
+						<ul>
+							<li>Look for Stream and Byte-Array usages that are copied or manipulated without using
+								<code>Span</code> or <code>Memory</code>
+							</li>
+							<li>Replace existing data manipulation methods with newer <code>Span</code> or
+								<code>Memory</code> based variants
+							</li>
+						</ul>
+					</div>
+					<aside class="notes">
+						<ul>
+							<li>Other times memory copying isn't so obvious or requires a deep understand of what is
+								happening
+								under the hoods of the framework, library or SDK in use.</li>
+							<li>The EventHubs client has recently introduced a new publisher type that uses internally a
+								partition key resolver that turns string partition keys into hash codes. 30-40% of the
+								hot path will be using partition keys when publishing, and therefore represents a
+								non-trivial amount of CPU and memory cycles when using that publisher type. The hash
+								code function looked like the following.</li>
+						</ul>
 					</aside>
 				</section>
 				<section>
@@ -748,10 +865,6 @@
 							// rest omitted
 						}
 						</script></code></pre>
-					<aside class="notes">
-						Other times memory copying isn't so obvious or requires a deep understand of what is happening
-						under the hoods of the framework, library or SDK in use.
-					</aside>
 				</section>
 				<section>
 					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|10|7,14-16|18-19|16,23-25|29|1,15" data-trim data-noescape><script type="text/template">
@@ -789,7 +902,19 @@
 						}
 						</script></code></pre>
 					<aside class="notes">
-						TBD
+						<ul>
+							<li>GetMaxByteCount: This is more efficient than asking for the actual byte length of the
+								string because it has O(1) semantics and doesn't traverse the whole string. So we
+								overrent. That's fine.</li>
+							<li>In cases when the byte length is longer than the maximum defined stack limit a regular
+								byte array is rented from the ArrayPool. The allocated buffer is then passed to the
+								encoding and then sliced before passing to the ComputeHash method into the corresponding
+								memory area that was actually used</li>
+							<li> At the end the when a buffer was pooled it is returned to the pool without clearing
+								since the partition keys are not considered sensitive data.</li>
+							<li>Also notice there is no finally block since we triaged it and couldn't come up with a
+								scenario for valid Unicode strings GetBytes would be throwing</li>
+						</ul>
 					</aside>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
@@ -852,6 +977,7 @@
 						<p>The original ComputeHash method had a bug... Did you spot it?</p>
 					</div>
 					<aside class="notes">
+						Reach out to me over twitter or my email provided on the next slide.
 					</aside>
 				</section>
 				<section data-background="img/science-1182713_1280.jpg">
@@ -866,8 +992,9 @@
 							</p>
 							<p>Happy coding!</p>
 							<p style="font-size: medium">
-								<i class="fa fa-twitter" aria-hidden="true"><a href="https://twitter.com/danielmarbach"> danielmarbach</a></i>
-								<i class="fa fa-envelope" aria-hidden="true"> <a										
+								<i class="fa fa-twitter" aria-hidden="true"><a href="https://twitter.com/danielmarbach">
+										danielmarbach</a></i>
+								<i class="fa fa-envelope" aria-hidden="true"> <a
 										href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;">&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;</a></i>
 							</p>
 						</div>
