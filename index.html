@@ -630,8 +630,9 @@
 						ArrayPool<byte>.Shared.Return(guidBuffer);
 						</script></code></pre>
 					<aside class="notes">
-						.NET has a built-in mechanism called ArrayPool&lt;T&gt; that allows to have pooled arrays that can be
-							reused.
+						.NET has a built-in mechanism called ArrayPool&lt;T&gt; that allows to have pooled arrays that
+						can be
+						reused.
 					</aside>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
@@ -664,8 +665,9 @@
 						var lockTokenGuid = new Guid(guidBytes);
 						</script></code></pre>
 					<aside class="notes">
-						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the memory
-							on the method's stack that is cleared when the method returns.
+						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the
+						memory
+						on the method's stack that is cleared when the method returns.
 					</aside>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
@@ -743,7 +745,18 @@
 					<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
 				</div>
 				<aside class="notes">
-					We want rules I know. Or how boris would say
+					<ul>
+						<li>The key to avoid unnecessary copying is Span and friends introduced with CSharp 7.3</li>
+						<li>Span&lt;T&gt; is a value type that enables the representation of contiguous regions of
+							arbitrary memory</li>
+						<li>It is a pointer to a memory location and a length to represent the length of the memory
+							represented by the span.</li>
+						<li>It can be "sliced" into various chunks, you can represent various slices of memory of
+							variable length without having to copy the memory</li>
+						<li>Span&lt;T&gt; can only live on the stack while its cousin Memory&lt;T&gt; can live on the
+							heap and therefore be used in asynchronous methods.</li>
+						<li>We want rules I know. Or how boris would say</li>
+					</ul>
 				</aside>
 			</section>
 			<section data-background-video="vids/Give-me-the-code-natalia.mp4">
