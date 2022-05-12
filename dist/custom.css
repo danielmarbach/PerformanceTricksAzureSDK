@@ -9,3 +9,8 @@
     font-size: 25px;
     text-align: left;
 }
+
+.code-header {
+    text-transform: none;
+    color: gray;
+}
