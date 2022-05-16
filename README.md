@@ -35,6 +35,9 @@ A good way to explore what scale means is to discover the assumptions that have 
   - Pool and re-use buffers
   - For smaller local buffers, consider using the stack
 - Avoid unnecessary copying of memory
+  - Watch out for immutable/readonly data that is copied
+  - Look for Stream and Byte-Array usages that are copied or manipulated without using `Span` or `Memory`
+  - Replace existing data manipulation methods with newer `Span` or `Memory` based variants
 
 ## Avoid excessive allocations to reduce the GC overhead
 
