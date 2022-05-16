@@ -179,7 +179,7 @@
 								}
 							}
 						</script></code></pre>
-						<small class="code-header">Avoid LINQ on the hot path.</small>
+					<small class="code-header">Avoid LINQ on the hot path.</small>
 					<aside class="notes">
 						<ul>
 							<li>Enumerable (broadest type according to SDK guidelines), string to guid, Any with
@@ -210,7 +210,7 @@
 								}
 							}
 						</script></code></pre>
-						<small class="code-header">Avoid LINQ on the hot path.</small>
+					<small class="code-header">Avoid LINQ on the hot path.</small>
 					<aside class="notes">
 						For every call of CompleteInternalAsync a new instance of Func&lt;Guid, bool&gt; is allocated
 						that points to &lt;CompleteInternalAsync&gtb__2_1. A closure captures the _lockedMessages and
@@ -236,7 +236,7 @@
 							return Task.CompletedTask;
 						}
 						</script></code></pre>
-						<small class="code-header">Avoid LINQ on the hot path.</small>
+					<small class="code-header">Avoid LINQ on the hot path.</small>
 					<aside class="notes">
 						This gets then compiled down to.
 					</aside>
@@ -265,7 +265,7 @@
 							return Task.CompletedTask;
 						}
 						</script></code></pre>
-						<small class="code-header">Avoid LINQ on the hot path.</small>
+					<small class="code-header">Avoid LINQ on the hot path.</small>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
@@ -332,7 +332,7 @@
 							return Task.CompletedTask;
 						}
 						</script></code></pre>
-						<small class="code-header">Avoid LINQ on the hot path.</small>
+					<small class="code-header">Avoid LINQ on the hot path.</small>
 					<aside class="notes">
 						In order to know which of these principles we can apply we have to be aware of what collection
 						types are usually passed as parameters to the CompleteAsync method. In the .NET Azure SDK the
@@ -368,7 +368,7 @@
 							return Task.CompletedTask;
 						}
 						</script></code></pre>
-						<small class="code-header">Avoid LINQ on the hot path.</small>
+					<small class="code-header">Avoid LINQ on the hot path.</small>
 					<aside class="notes">
 						The internal method signature has to be changed to accept a parameter of type
 						IReadOnlyCollection. For the empty case we can directly use the empty array and in the other
@@ -446,7 +446,7 @@
 							}
 						}
 						</script></code></pre>
-						<small class="code-header">Remove closure allocations.</small>
+					<small class="code-header">Remove closure allocations.</small>
 					<aside class="notes">
 						Retry method from the ServiceBus SDK that retries operations on certain server failure scenarios
 						(like RetryAfter when busy).
@@ -465,7 +465,7 @@
 						await createBatchTask;
 						return messageBatch;
 						</script></code></pre>
-						<small class="code-header">Remove closure allocations.</small>
+					<small class="code-header">Remove closure allocations.</small>
 					<aside class="notes">
 						Notice the message batch local is captured as well as the options instance.
 						Decompile the code.
@@ -488,7 +488,7 @@
 							// rest omitted
 						}
 						</script></code></pre>
-						<small class="code-header">Remove closure allocations.</small>
+					<small class="code-header">Remove closure allocations.</small>
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|1|2,3|14" data-trim data-noescape><script type="text/template">
@@ -513,7 +513,7 @@
 							}
 						}
 						</script></code></pre>
-						<small class="code-header">Remove closure allocations.</small>
+					<small class="code-header">Remove closure allocations.</small>
 					<aside class="notes">
 						We can augment this code to accept an input T1 and return an output. The input argument or state
 						is then passed into the operation method.
@@ -538,7 +538,7 @@
 							(t1, operation),
 							scope, cancellationToken);
 						</script></code></pre>
-						<small class="code-header">Remove closure allocations.</small>
+					<small class="code-header">Remove closure allocations.</small>
 					<aside class="notes">
 						<ul>
 							<li>Switch to ValueTask because some operations returned value tasks</li>
@@ -567,7 +567,7 @@
 							// rest omitted
 						}
 						</script></code></pre>
-						<small class="code-header">Remove closure allocations.</small>
+					<small class="code-header">Remove closure allocations.</small>
 					<aside class="notes">
 						With that small change, we save the display class and the function delegate allocations and can
 						properly usage methods that support value tasks without having to allocate a task instance when
@@ -622,7 +622,7 @@
 							return $"{someState}_{someOtherState}";
 						}, (someState1, someOtherState));
 						</script></code></pre>
-						<small class="code-header">Remove closure allocations.</small>
+					<small class="code-header">Remove closure allocations.</small>
 				</section>
 			</section>
 			<section>
@@ -641,7 +641,7 @@
 						Buffer.BlockCopy(data.Array, data.Offset, guidBuffer, 0, 16);
 						var lockTokenGuid = new Guid(guidBuffer);
 						</script></code></pre>
-						<small class="code-header">Pool and re-use buffers.</small>
+					<small class="code-header">Pool and re-use buffers.</small>
 					<aside class="notes">
 						Azure Service Bus uses the concept of lock tokens (a glorified GUID) in certain modes to
 						acknowledge messages. For messages loaded by the client, there is a lock token that needs to be
@@ -656,7 +656,7 @@
 						var lockTokenGuid = new Guid(guidBuffer);
 						ArrayPool<byte>.Shared.Return(guidBuffer);
 						</script></code></pre>
-						<small class="code-header">Pool and re-use buffers.</small>
+					<small class="code-header">Pool and re-use buffers.</small>
 					<aside class="notes">
 						.NET has a built-in mechanism called ArrayPool&lt;T&gt; that allows to have pooled arrays that
 						can be
@@ -692,7 +692,7 @@
 						data.AsSpan().CopyTo(guidBytes);
 						var lockTokenGuid = new Guid(guidBytes);
 						</script></code></pre>
-						<small class="code-header">Pool and re-use buffers.</small>
+					<small class="code-header">Pool and re-use buffers.</small>
 					<aside class="notes">
 						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the
 						memory
@@ -742,7 +742,7 @@
 						// most common case
 						await Task.WhenAny(new[] { task1, task2 });	
 						</script></code></pre>
-						<small class="code-header">Avoid parameter overloads and boxing.</small>
+					<small class="code-header">Avoid parameter overloads and boxing.</small>
 				</section>
 				<section data-auto-animate>
 					<code data-id="whenany-title">Task.WhenAny</code>
@@ -751,7 +751,7 @@
 							
 						await Task.WhenAny(task1, task2);	
 						</script></code></pre>
-						<small class="code-header">Avoid parameter overloads and boxing.</small>
+					<small class="code-header">Avoid parameter overloads and boxing.</small>
 				</section>
 				<section data-auto-animate>
 					<code>CancellationTokenSource</code>
@@ -760,7 +760,7 @@
 							params CancellationToken[] tokens
 						);
 						</script></code></pre>
-						<small class="code-header">Avoid parameter overloads and boxing.</small>
+					<small class="code-header">Avoid parameter overloads and boxing.</small>
 				</section>
 				<section data-auto-animate>
 					<code>CancellationTokenSource</code>
@@ -770,7 +770,7 @@
 							CancellationToken token2
 						);
 						</script></code></pre>
-						<small class="code-header">Avoid parameter overloads and boxing.</small>
+					<small class="code-header">Avoid parameter overloads and boxing.</small>
 				</section>
 			</section>
 			<section data-background="img/plotter-2138990_1280.jpg">
@@ -836,7 +836,7 @@
 							}
 						}
 						</script></code></pre>
-						<small class="code-header">Immutable/readonly data should not be copied.</small>
+					<small class="code-header">Immutable/readonly data should not be copied.</small>
 				</section>
 				<section data-auto-animate>
 					<pre data-id="body-copy" style="font-size: 0.45em"><code class="language-csharp" data-line-numbers="|11" data-trim data-noescape><script type="text/template">
@@ -854,7 +854,7 @@
 							}
 						}
 						</script></code></pre>
-						<small class="code-header">Immutable/readonly data should not be copied.</small>
+					<small class="code-header">Immutable/readonly data should not be copied.</small>
 					<aside class="notes">
 						Other times memory copying isn't so obvious or requires a deep understand of what is
 						happening
@@ -889,7 +889,7 @@
 					</aside>
 				</section>
 				<section>
-					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|11" data-trim data-noescape><script type="text/template">
+					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6,7,11" data-trim data-noescape><script type="text/template">
 						private static short GenerateHashCode(string partitionKey) {
 							if (partitionKey == null) {
 								return 0;
@@ -917,7 +917,7 @@
 							// rest omitted
 						}
 						</script></code></pre>
-						<small class="code-header">Avoid unnecessary copying of memory.</small>
+					<small class="code-header">Avoid unnecessary copying of memory.</small>
 				</section>
 				<section>
 					<pre class="stretch" data-id="compute-hash" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|10|13|7,13-16|18-19|16,23-25|29|1,15" data-trim data-noescape><script type="text/template">
@@ -954,7 +954,7 @@
 							// rest omitted
 						}
 						</script></code></pre>
-						<small class="code-header">Avoid unnecessary copying of memory.</small>
+					<small class="code-header">Avoid unnecessary copying of memory.</small>
 					<aside class="notes">
 						<ul>
 							<li>GetMaxByteCount: This is more efficient than asking for the actual byte length of the
@@ -1028,8 +1028,27 @@
 				<section data-background="img/quiz-2137664_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">In case you are up for a challenge</h2>
-						<p>The original ComputeHash method had a bug... Did you spot it?</p>
+						<p>The original <code style="color: lightskyblue;">ComputeHash</code> method had a <i
+								class="fa fa-bug" aria-hidden="true" style="color: lightskyblue;"></i>.<br />Did you spot it?
+						</p>
+						<pre style="color: gray;">static void ComputeHash(byte[] data, uint seed1, uint seed2, 
+	out uint hash1, out uint hash2)	{
+
+   uint a, b, c;
+
+   a = b = c = (uint)(0xdeadbeef + data.Length + seed1);
+   c += seed2;
+
+   int index = 0, size = data.Length;
+   while (size > 12) {
+      a += BitConverter.ToUInt32(data, index);
+      b += BitConverter.ToUInt32(data, index + 4);
+      c += BitConverter.ToUInt32(data, index + 8);
+
+      // rest omitted
+   }</pre>
 					</div>
+
 					<aside class="notes">
 						Reach out to me over twitter or my email provided on the next slide.
 					</aside>
