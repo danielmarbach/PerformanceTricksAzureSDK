@@ -1023,7 +1023,8 @@
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">In case you are up for a challenge</h2>
 						<p>The original <code style="color: lightskyblue;">ComputeHash</code> method had a <i
-								class="fa fa-bug" aria-hidden="true" style="color: lightskyblue;"></i>.<br />Did you spot it?
+								class="fa fa-bug" aria-hidden="true" style="color: lightskyblue;"></i>.<br />Did you
+							spot it?
 						</p>
 						<pre style="color: gray;">static void ComputeHash(byte[] data, uint seed1, uint seed2, 
 	out uint hash1, out uint hash2)	{
@@ -1067,6 +1068,19 @@
 						</div>
 					</div>
 					<aside class="notes">
+						<ul>
+							<li>Tweak expensive I/O operations first</li>
+							<li>Once that
+								is done the principles and practices here can make your code even faster.</li>
+							<li>Optimizations can also be efficiently combined with refactorings and redesigns on
+								the hot path.</li>
+							<li>For us, as engineers, it means we have to know what to ignore and knowing what to pay
+								close
+								attention to in the code base we are working. And sometimes that will mean ignoring the
+								performance optimizations learned here in the code bases they don't matter, yet
+								consistently
+								applying them where they do.</li>
+						</ul>
 					</aside>
 				</section>
 			</section>
