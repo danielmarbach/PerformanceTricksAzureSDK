@@ -9,7 +9,9 @@ Over the past few years, I've contributed over fifty pull requests to the Azure 
 
 ## Introduction
 
-In this talk, I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. The focus is purely on code with examples in CSharp. .NET has been evolving over the years into a modern and high-performance platform. The languages running on .NET have also been improving and allowing to fall to lower levels without giving up on the safety guarantees too much or only where it is really needed. It is less and less needed to use unmanaged languages like C/C++ to achieve code that performs well at scale.
+In this talk, I'm going to focus on some performance optimizations that can be done in code that is library and framework like. I won't be talking about architectural patterns like vertical or horizontal scaling. I will also not be talking about how to use Benchmarking Tools like Benchmark.NET or give an introduction into profilers. If you are interested in that topic I have linked some interesting talks in the readme of the presentation repository.
+
+The focus is purely on code with examples in CSharp. .NET has been evolving over the years into a modern and high-performance platform. The languages running on .NET have also been improving and allowing to fall to lower levels without giving up on the safety guarantees too much or only where it is really needed. It is less and less needed to use unmanaged languages like C/C++ to achieve code that performs well at scale.
 
 Some optimizations shown here can be seen as esoteric in typical line of business applications, and I wouldn't recommend jumping to conclusions and applying those everywhere. It is important to note that for code that is executed under scale, optimizations on code can bring a lot of benefit to the table due to not only being fast but also being more efficient in resource usage, execution time, throughput and memory usage.
 
@@ -681,3 +683,10 @@ For us, as engineers, it means we have to know what to ignore and knowing what t
 - [stackalloc expression](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/stackalloc)
 - [All About Span: Exploring a New .NET Mainstay](https://docs.microsoft.com/en-us/archive/msdn-magazine/2018/january/csharp-all-about-span-exploring-a-new-net-mainstay)
 - [stackalloc docs should discuss performance benefit of constant size](https://github.com/dotnet/docs/issues/28823)
+
+## Interesting talks
+
+- [Intro to Benchmark.net - How To Benchmark C# Code](https://www.youtube.com/watch?v=mmza9x3QxYE)
+- [Getting started with dotMemory](https://www.youtube.com/watch?v=6Tmcx6cTExg)
+- [How to profile .NET Core applications with dotTrace](https://www.youtube.com/watch?v=ZWS156lKAos)
+- [Performance Profiling with Visual Studio](https://www.youtube.com/watch?v=FpibK0PKfcI&list=PLReL099Y5nRf2cOurn1hI-gSRxsdbC27C)
