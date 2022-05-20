@@ -401,6 +401,19 @@ With the introduction of `Span<T>` and the `stackalloc` keyword, we can directly
 
 ![](/benchmarks/StackallocWithGuid.png)
 
+The question is though why would you even take a defensive copy of the bytes from the network here when you already have `ReadOnlySpan<T>` support on the Guid constructor in newer versions of .NET. The best version would be to not copy memory at all and directly pass the sliced network bytes to initialize the Guid. We will be talking about techniques of how to avoid memory copying later. Where you have to copy memory though this technique comes in handy.
+
+Due to having to target .NET Standard 2.0, where we can only pass `byte[]` to the Guid constructor, the actual version was a bit more complicated and the above example is slightly twisting the reality, call it artistic freedom.
+
+```csharp
+Span<byte> guidBytes = stackalloc byte[GuidSizeInBytes];
+amqpMessage.DeliveryTag.AsSpan().CopyTo(guidBytes);
+if (!MemoryMarshal.TryRead<Guid>(guidBytes, out var lockTokenGuid))
+{
+    lockTokenGuid = new Guid(guidBytes.ToArray());
+}
+```
+
 ## Parameter overloads and boxing
 
 Some methods have parameter overloads of type `params object[]`. That can lead to some sneaky and costly array allocations that you might not even be aware of. With never incarnations of .NET there have been a number of improvements done in that area by introducing new method overloads for common cases that don't require allocating a parameter array. For example, instead of using

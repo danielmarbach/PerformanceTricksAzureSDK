@@ -678,8 +678,10 @@
 					<small class="code-header">Small local buffers on stack.</small>
 					<aside class="notes">
 						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the
-						memory
-						on the method's stack that is cleared when the method returns.
+						memory on the method's stack that is cleared when the method returns. But why even copying when
+						Guid ctors have support for ReadOnlySpan&lt;T&gt;? We will be talking about techniques of how to
+						avoid
+						memory copying later. Where you have to copy memory though this technique comes in handy.
 					</aside>
 				</section>
 				<section data-background="img/time-g5afc932c4_1280.jpg">
