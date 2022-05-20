@@ -11,7 +11,7 @@
 	<link rel="stylesheet" href="dist/reset.css">
 	<link rel="stylesheet" href="dist/reveal.css">
 	<link rel="stylesheet" href="dist/theme/black.css">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="css/font-awesome.min.css">
 	<link rel="stylesheet" href="dist/custom.css">
 
 	<!-- Theme used for syntax highlighted code -->
@@ -106,42 +106,15 @@
 						experience.
 					</aside>
 				</section>
-				<section data-auto-animate>
+				<section>
 					<ul>
-						<li data-id="allocations">Avoid excessive allocations to reduce the GC overhead</li>
-						<li data-id="copying">Avoid unnecessary copying of memory</li>
+						<li>Avoid excessive allocations to reduce the GC overhead</li>
+						<li>Avoid unnecessary copying of memory</li>
 					</ul>
 					<aside class="notes">
-						These are the two high level categories worth remembering.
+						These are the two high level categories we are going to focus on. For each section I will
+						introduce a few handy rules that should help you make the right tradeoffs.
 					</aside>
-				</section>
-				<section data-auto-animate>
-					<ul class="r-fit-text">
-						<li data-id="allocations">Avoid excessive allocations to reduce the GC overhead</li>
-						<ul>
-							<li class="fragment fade-in">Be aware of closure allocations</li>
-							<li class="fragment fade-in">Be aware of parameter overloads</li>
-							<li class="fragment fade-in">Where possible and feasible use value types <br />but pay
-								attention to unnecessary boxing</li>
-							<li class="fragment fade-in">Think at least twice before using LINQ <br /> or
-								unnecessary enumeration on the hot path</li>
-							<li class="fragment fade-in">Pool and re-use buffers</li>
-							<li class="fragment fade-in">For smaller local buffers, consider using the stack</li>
-						</ul>
-						<li data-id="copying">Avoid unnecessary copying of memory
-							<ul>
-								<li class="fragment fade-in">Watch out for immutable/readonly data that is copied</li>
-								<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or
-									manipulated without using
-									<code>Span</code> or <code>Memory</code>
-								</li>
-								<li class="fragment fade-in">Replace existing data manipulation methods with newer
-									<code>Span</code> or
-									<code>Memory</code> based variants
-								</li>
-							</ul>
-						</li>
-					</ul>
 				</section>
 			</section>
 			<section>
@@ -296,7 +269,7 @@
 					</aside>
 				</section>
 				<section>
-					<h2 class="r-fit-text" data-id="thumb">LINQ to collection-based operations</h2>
+					<h2 class="r-fit-text">LINQ to collection-based operations</h2>
 					<ul>
 						<li class="fragment fade-in">Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
 						</li>
@@ -681,13 +654,22 @@
 						we can do better.
 					</aside>
 				</section>
+			</section>
+			<section>
+				<section data-background="img/excess-g121ed821c_1280.jpg">
+					<div
+						style="margin-left: auto; margin-right: auto; width: 60%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: left;">
+						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
+						<p>For smaller local buffers, consider using the stack</p>
+					</div>
+				</section>
 				<section>
 					<pre><code class="language-csharp" data-line-numbers="|1|2" data-trim data-noescape><script type="text/template">
 						Span<byte> guidBytes = stackalloc byte[16];
 						data.AsSpan().CopyTo(guidBytes);
 						var lockTokenGuid = new Guid(guidBytes);
 						</script></code></pre>
-					<small class="code-header">Pool and re-use buffers.</small>
+					<small class="code-header">Small local buffers on stack.</small>
 					<aside class="notes">
 						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the
 						memory
@@ -768,6 +750,23 @@
 					<small class="code-header">Avoid parameter overloads and boxing.</small>
 				</section>
 			</section>
+			<section data-background="img/office-4249395_1280.jpg">
+			</section>
+			<section>
+				<ul>
+					<li>Avoid excessive allocations to reduce the GC overhead</li>
+					<ul>
+						<li>Think at least twice before using LINQ or
+							unnecessary enumeration on the hot path</li>
+						<li>Be aware of closure allocations</li>
+						<li>Pool and re-use buffers</li>
+						<li>For smaller local buffers, consider using the stack</li>
+						<li style="color: lightslategray">Be aware of parameter overloads</li>
+						<li style="color: lightslategray">Where possible and feasible use value types but pay
+							attention to unnecessary boxing</li>
+					</ul>
+				</ul>
+			</section>
 			<section data-background="img/plotter-2138990_1280.jpg">
 				<div class="image-slide-box">
 					<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
@@ -786,25 +785,6 @@
 						<li>We want rules I know. Or how boris would say</li>
 					</ul>
 				</aside>
-			</section>
-			<section data-background="img/office-4249395_1280.jpg">
-				<aside class="notes">
-					As developers and engineers we want rules that we can apply. I have compiled them based on my
-					experience.
-				</aside>
-			</section>
-			<section>
-				<ul>
-					<li class="fragment fade-in">Watch out for immutable/readonly data that is copied</li>
-					<li class="fragment fade-in">Look for Stream and Byte-Array usages that are copied or
-						manipulated without using
-						<code>Span</code> or <code>Memory</code>
-					</li>
-					<li class="fragment fade-in">Replace existing data manipulation methods with newer
-						<code>Span</code> or
-						<code>Memory</code> based variants
-					</li>
-				</ul>
 			</section>
 			<section data-visibility="hidden">
 				<section data-background="img/plotter-2138990_1280.jpg">
@@ -983,6 +963,23 @@
 						<img src="benchmarks/PartitionKeyResolver.png" />
 					</div>
 				</section>
+				<section data-background="img/office-4249395_1280.jpg">
+				</section>
+				<section>
+					<ul>
+						<li>Look for Stream and Byte-Array usages that are copied or
+							manipulated without using
+							<code>Span</code> or <code>Memory</code>
+						</li>
+						<li>Replace existing data manipulation methods with newer
+							<code>Span</code> or
+							<code>Memory</code> based variants
+						</li>
+						<li style="color: lightslategray">Watch out for immutable/readonly data that is copied</li>
+					</ul>
+				</section>
+			</section>
+			<section>
 				<section>
 					<ul class="r-fit-text">
 						<li>Avoid excessive allocations to reduce the GC overhead</li>
@@ -1053,20 +1050,23 @@
 				<section data-background="img/science-1182713_1280.jpg">
 					<div
 						style="width: 70%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.8); color: rgb(255, 255, 255); padding: 25px; font-size: 25px; text-align: left;">
-						<h5>At Scale implementation details matter</h5>
+						<h5>At Scale implementation details matter</h5>					
 						<div>
-							<p>Sometimes that will mean ignoring the performance optimizations learned here in the code
-								bases they don't matter, yet consistently applying them where they do</p>
+							<p><img src="img/repolink.svg" height="100" style="float: right; margin-top: auto;" />Tweak expensive I/O operations first. <br />Pay close attention to the context of the code.<br />
+								Apply the principles where they matter. <br />Everywhere else, favor readability.
+							</p>
 							<p><a
 									href="https://github.com/danielmarbach/PerformanceTricksAzureSDK">github.com/danielmarbach/PerformanceTricksAzureSDK</a>
 							</p>
 							<p>Happy coding!</p>
+							
 							<p style="font-size: medium">
 								<i class="fa fa-twitter" aria-hidden="true"><a href="https://twitter.com/danielmarbach">
 										danielmarbach</a></i>
 								<i class="fa fa-envelope" aria-hidden="true"> <a
 										href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;">&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;</a></i>
 							</p>
+							
 						</div>
 					</div>
 					<aside class="notes">
