@@ -31,7 +31,7 @@
 								href="https://twitter.com/danielmarbach"> danielmarbach</a> |</i>
 						<i class="fa fa-envelope" aria-hidden="true"> <a
 								style="text-transform: none;color: rgba(31, 129, 74, 0.6)"
-								href="mailto:&#100;&#097;&#110;&#105;&#101;&#108;&#046;&#109;&#097;&#114;&#098;&#097;&#099;&#104;&#064;&#112;&#097;&#114;&#116;&#105;&#099;&#117;&#108;&#097;&#114;&#046;&#110;&#101;&#116;">&#100;&#097;&#110;&#105;&#101;&#108;&#046;&#109;&#097;&#114;&#098;&#097;&#099;&#104;&#064;&#112;&#097;&#114;&#116;&#105;&#099;&#117;&#108;&#097;&#114;&#046;&#110;&#101;&#116;</a></i>
+								href="mailto:&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;">&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;</a></i>
 					</p>
 				</div>
 			</section>
@@ -133,16 +133,16 @@
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|8|10|11" data-trim data-noescape><script type="text/template">
 							public class AmqpReceiver {
-								
+
 								ConcurrentBag<Guid> _lockedMessages = new ();
-								
-								public Task CompleteAsync(IEnumerable<string> lockTokens) 
+
+								public Task CompleteAsync(IEnumerable<string> lockTokens)
 									=> CompleteInternalAsync(lockTokens);
-								
-								Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+
+								Task CompleteInternalAsync(IEnumerable<string> lockTokens)
 								{
 									Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
-									if (lockTokenGuids.Any(lockToken => _lockedMessages.Contains(lockToken))) 
+									if (lockTokenGuids.Any(lockToken => _lockedMessages.Contains(lockToken)))
 									{
 									  // do special path accessing lockTokenGuids
 									  return Task.CompletedTask;
@@ -164,18 +164,18 @@
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|8-9|10,17" data-trim data-noescape><script type="text/template">
 							public class AmqpReceiver {
-	
+
 								// ...
 								// Compiler generated chunk we are not really interested in right now
-	
+
 								private Task CompleteInternalAsync(IEnumerable<string> lockTokens)
 								{
-									Enumerable.Any(Enumerable.ToArray(Enumerable.Select(lockTokens, <>c.<>9__2_0 ?? 
-										(<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0)))), 
+									Enumerable.Any(Enumerable.ToArray(Enumerable.Select(lockTokens, <>c.<>9__2_0 ??
+										(<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0)))),
 											new Func<Guid, bool>(<CompleteInternalAsync>b__2_1));
 									return Task.CompletedTask;
 								}
-							
+
 								[CompilerGenerated]
 								private bool <CompleteInternalAsync>b__2_1(Guid lockToken)
 								{
@@ -193,13 +193,13 @@
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|7-13" data-trim data-noescape><script type="text/template">
-						public Task CompleteAsync(IEnumerable<string> lockTokens) 
+						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
 
-						Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+						Task CompleteInternalAsync(IEnumerable<string> lockTokens)
 						{
 							Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
-							foreach (var tokenGuid in lockTokenGuids) 
+							foreach (var tokenGuid in lockTokenGuids)
 							{
 								if (_requestResponseLockedMessages.Contains(tokenGuid))
 								{
@@ -216,13 +216,13 @@
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6-8" data-trim data-noescape><script type="text/template">
-						public Task CompleteAsync(IEnumerable<string> lockTokens) 
+						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
 
-						Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+						Task CompleteInternalAsync(IEnumerable<string> lockTokens)
 						{
-							Guid[] array = Enumerable.ToArray(Enumerable.Select(lockTokens, 
-								<>c.<>9__2_0 ?? 
+							Guid[] array = Enumerable.ToArray(Enumerable.Select(lockTokens,
+								<>c.<>9__2_0 ??
 								(<>c.<>9__2_0 = new Func<string, Guid>(<>c.<>9.<CompleteInternalAsync>b__2_0))));
 
 							int num = 0;
@@ -290,13 +290,13 @@
 				</section>
 				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
-						public Task CompleteAsync(IEnumerable<string> lockTokens) 
+						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
 
-						Task CompleteInternalAsync(IEnumerable<string> lockTokens) 
+						Task CompleteInternalAsync(IEnumerable<string> lockTokens)
 						{
 							Guid[] lockTokenGuids = lockTokens.Select(token => new Guid(token)).ToArray();
-							foreach (var tokenGuid in lockTokenGuids) 
+							foreach (var tokenGuid in lockTokenGuids)
 							{
 								if (_requestResponseLockedMessages.Contains(tokenGuid))
 								{
@@ -324,7 +324,7 @@
 							};
 							return CompleteInternalAsync(readOnlyCollection);
 						}
-						
+
 						Task CompleteInternalAsync(IReadOnlyCollection<string> lockTokens)
 						{
 							int count = lockTokens.Count;
@@ -406,8 +406,8 @@
 				<section>
 					<pre class="stretch" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2|13" data-trim data-noescape><script type="text/template">
 						async Task RunOperation(
-							Func<TimeSpan, Task> operation, 
-							TransportConnectionScope scope, CancellationToken cancellationToken) 
+							Func<TimeSpan, Task> operation,
+							TransportConnectionScope scope, CancellationToken cancellationToken)
 						{
 							TimeSpan tryTimeout = CalculateTryTimeout(0);
 							// omitted
@@ -415,7 +415,7 @@
 								if (IsServerBusy) {
 									await Task.Delay(ServerBusyBaseSleepTime, cancellationToken);
 								}
-						
+
 								try	{
 									await operation(tryTimeout);
 									return;
@@ -437,7 +437,7 @@
 						TransportMessageBatch messageBatch = null;
 						Task createBatchTask = _retryPolicy.RunOperation(async (timeout) =>
 						{
-							messageBatch = 
+							messageBatch =
 								await CreateMessageBatchInternalAsync(options, timeout);
 						},
 						_connectionScope,
@@ -461,8 +461,8 @@
 
 							configuredTaskAwaiter = amqpSender._retryPolicy.RunOperation(
 								new Func<TimeSpan, Task>((object) this.\u003C\u003E8__1,
-									 __methodptr(\u003CCreateMessageBatchAsync\u003Eb__0)), 
-									 (TransportConnectionScope) amqpSender._connectionScope, 
+									 __methodptr(\u003CCreateMessageBatchAsync\u003Eb__0)),
+									 (TransportConnectionScope) amqpSender._connectionScope,
 									 this.cancellationToken).ConfigureAwait(false).GetAwaiter();
 
 							// rest omitted
@@ -483,7 +483,7 @@
 								if (IsServerBusy) {
 									await Task.Delay(ServerBusyBaseSleepTime, cancellationToken);
 								}
-						
+
 								try	{
 									return await operation(t1, tryTimeout, cancellationToken);
 								}
@@ -514,7 +514,7 @@
 									var (t1, operation) = value;
 									await operation(t1, timeout, token);
 									return default(object);
-								}, 
+								},
 							(t1, operation),
 							scope, cancellationToken);
 						</script></code></pre>
@@ -536,13 +536,13 @@
 						if (num1 != 0) {
 							configuredTaskAwaiter = t1._retryPolicy
 								.RunOperation<AmqpSender, CreateMessageBatchOptions, TransportMessageBatch>(
-								AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 ?? (AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 = 
+								AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 ?? (AmqpSender.\u003C\u003Ec.\u003C\u003E9__16_0 =
 									new Func<AmqpSender, CreateMessageBatchOptions, TimeSpan, CancellationToken, Task<TransportMessageBatch>>(
-										(object) AmqpSender.\u003C\u003Ec.\u003C\u003E9, 
-										__methodptr(\u003CCreateMessageBatchAsync\u003Eb__16_0))), 
-										t1, 
-										this.options, 
-										(TransportConnectionScope) t1._connectionScope, 
+										(object) AmqpSender.\u003C\u003Ec.\u003C\u003E9,
+										__methodptr(\u003CCreateMessageBatchAsync\u003Eb__16_0))),
+										t1,
+										this.options,
+										(TransportConnectionScope) t1._connectionScope,
 										this.cancellationToken).ConfigureAwait(false).GetAwaiter();
 							// rest omitted
 						}
@@ -587,12 +587,12 @@
 					<pre style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
 						var someState1 = new object();
 						var someOtherState = 42;
-						
+
 						var dictionary = new ConcurrentDictionary<string, string>();
-						
+
 						dictionary.GetOrAdd("SomeKey", static (key, state) => {
 							var (someState, someOtherState) = state;
-						
+
 							return $"{someState}_{someOtherState}";
 						}, (someState1, someOtherState));
 						</script></code></pre>
@@ -707,7 +707,7 @@
 					</aside>
 				</section>
 			</section>
-			<section data-visibility="hidden">
+			<section>
 				<section data-background="img/excess-g121ed821c_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
@@ -725,7 +725,7 @@
 					<pre data-id="whenany"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
 						public static Task<Task> WhenAny(params Task[] tasks);
 						// most common case
-						await Task.WhenAny(new[] { task1, task2 });	
+						await Task.WhenAny(new[] { task1, task2 });
 						</script></code></pre>
 					<small class="code-header">Avoid parameter overloads and boxing.</small>
 				</section>
@@ -733,8 +733,8 @@
 					<code data-id="whenany-title">Task.WhenAny</code>
 					<pre data-id="whenany"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
 						public static Task<Task> WhenAny(Task task1, Task task2);
-							
-						await Task.WhenAny(task1, task2);	
+
+						await Task.WhenAny(task1, task2);
 						</script></code></pre>
 					<small class="code-header">Avoid parameter overloads and boxing.</small>
 				</section>
@@ -769,7 +769,7 @@
 						<li>Be aware of closure allocations</li>
 						<li>Pool and re-use buffers</li>
 						<li>For smaller local buffers, consider using the stack</li>
-						<li style="color: lightslategray">Be aware of parameter overloads</li>
+						<li>Be aware of parameter overloads</li>
 						<li style="color: lightslategray">Where possible and feasible use value types but pay
 							attention to unnecessary boxing</li>
 					</ul>
@@ -794,7 +794,7 @@
 					</ul>
 				</aside>
 			</section>
-			<section data-visibility="hidden">
+			<section>
 				<section data-background="img/plotter-2138990_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
@@ -806,8 +806,8 @@
 						public class ServiceBusReceivedMessage {
 							public BinaryData Body { get; }
 						}
-						
-						public static ServiceBusMessage 
+
+						public static ServiceBusMessage
 							CreateFrom(ServiceBusReceivedMessage message) {
 							//...
 							var originalBody = message.Body;
@@ -826,8 +826,8 @@
 						public class ServiceBusReceivedMessage {
 							public BinaryData Body { get; }
 						}
-						
-						public static ServiceBusMessage 
+
+						public static ServiceBusMessage
 							CreateFrom(ServiceBusReceivedMessage message) {
 							//...
 							var originalBody = message.Body;
@@ -877,26 +877,26 @@
 							if (partitionKey == null) {
 								return 0;
 							}
-						
+
 							var encoding = Encoding.UTF8;
 							ComputeHash(encoding.GetBytes(partitionKey), 0, 0, out uint hash1, out uint hash2);
 							return (short)(hash1 ^ hash2);
 						}
-						
-						private static void ComputeHash(byte[] data, uint seed1, uint seed2, 
+
+						private static void ComputeHash(byte[] data, uint seed1, uint seed2,
 							out uint hash1, out uint hash2)	{
 
 							uint a, b, c;
-						
+
 							a = b = c = (uint)(0xdeadbeef + data.Length + seed1);
 							c += seed2;
-						
+
 							int index = 0, size = data.Length;
 							while (size > 12) {
 								a += BitConverter.ToUInt32(data, index);
 								b += BitConverter.ToUInt32(data, index + 4);
 								c += BitConverter.ToUInt32(data, index + 8);
-						
+
 							// rest omitted
 						}
 						</script></code></pre>
@@ -909,18 +909,18 @@
 							if (partitionKey == null) {
 								return 0;
 							}
-						
+
 							const int MaxStackLimit = 256;
-						
+
 							byte[] sharedBuffer = null;
 							var partitionKeySpan = partitionKey.AsSpan();
 							var encoding = Encoding.UTF8;
-						
+
 							var partitionKeyByteLength = encoding.GetMaxByteCount(partitionKey.Length);
 							var hashBuffer = partitionKeyByteLength <= MaxStackLimit ?
 								stackalloc byte[MaxStackLimit] :
 								sharedBuffer = ArrayPool<byte>.Shared.Rent(partitionKeyByteLength);
-						
+
 							var written = encoding.GetBytes(partitionKeySpan, hashBuffer);
 							var slicedBuffer = hashBuffer.Slice(0, written);
 
@@ -932,7 +932,7 @@
 							return (short)(hash1 ^ hash2);
 						}
 
-						private static void ComputeHash(ReadonlySpan<byte> data, uint seed1, uint seed2, 
+						private static void ComputeHash(ReadonlySpan<byte> data, uint seed1, uint seed2,
 							out uint hash1, out uint hash2)	{
 							// rest omitted
 						}
@@ -983,7 +983,7 @@
 							<code>Span</code> or
 							<code>Memory</code> based variants
 						</li>
-						<li style="color: lightslategray">Watch out for immutable/readonly data that is copied</li>
+						<li>Watch out for immutable/readonly data that is copied</li>
 					</ul>
 				</section>
 			</section>
@@ -1033,7 +1033,7 @@
 								class="fa fa-bug" aria-hidden="true" style="color: lightskyblue;"></i>.<br />Did you
 							spot it?
 						</p>
-						<pre style="color: gray;">static void ComputeHash(byte[] data, uint seed1, uint seed2, 
+						<pre style="color: gray;">static void ComputeHash(byte[] data, uint seed1, uint seed2,
 	out uint hash1, out uint hash2)	{
 
    uint a, b, c;
@@ -1074,7 +1074,7 @@
 								<i class="fa fa-twitter" aria-hidden="true"><a href="https://twitter.com/danielmarbach">
 										danielmarbach</a></i>
 								<i class="fa fa-envelope" aria-hidden="true"> <a
-										href="mailto:&#100;&#097;&#110;&#105;&#101;&#108;&#046;&#109;&#097;&#114;&#098;&#097;&#099;&#104;&#064;&#112;&#097;&#114;&#116;&#105;&#099;&#117;&#108;&#097;&#114;&#046;&#110;&#101;&#116;">&#100;&#097;&#110;&#105;&#101;&#108;&#046;&#109;&#097;&#114;&#098;&#097;&#099;&#104;&#064;&#112;&#097;&#114;&#116;&#105;&#099;&#117;&#108;&#097;&#114;&#046;&#110;&#101;&#116;</a></i>
+										href="mailto:&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;">&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;</a></i>
 							</p>
 
 						</div>
