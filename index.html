@@ -5,7 +5,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-	<title>Performance tricks I learned from contributing open source .NET packages</title>
+	<title>Performance tricks I learned from contributing to the Azure .NET SDK</title>
 	<meta name="author" content="Daniel Marbach">
 
 	<link rel="stylesheet" href="dist/reset.css">
@@ -24,7 +24,7 @@
 			<section data-background="img/juggler-trick-magician-juggle-1216853.jpg">
 				<div style="left: 10; width: 52%; padding: 25px; font-size: 30px; text-align: left;">
 					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from
-						contributing to open source .NET packages</h3>
+						contributing to the Azure .NET SDK</h3>
 					<p style="text-transform: none;color: rgba(31, 129, 74, 0.6); font-size: small;">
 						<i class="fa fa-twitter" aria-hidden="true"><a
 								style="text-transform: none;color: rgba(31, 129, 74, 0.6)"
@@ -34,6 +34,8 @@
 								href="mailto:&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;">&#100;&#97;&#110;&#105;&#101;&#108;&#46;&#109;&#97;&#114;&#98;&#97;&#99;&#104;&#64;&#111;&#112;&#101;&#110;&#112;&#108;&#97;&#99;&#101;&#46;&#110;&#101;&#116;</a></i>
 					</p>
 				</div>
+			</section>
+			<section data-background-image="img/dotnetday-sponsors.jpg" data-background-size="contain" data-background-repeat="no-repeat">
 			</section>
 			<section>
 				<section data-background="img/architecture-g104d6d62d_1280.jpg">
@@ -259,7 +261,7 @@
 					<aside class="notes">
 						By getting rid of the Any we were able to squeeze out some good performance improvements.
 						Sometimes, though, we can do even more. For example, there are a few general rules we can follow
-						when we refactor a code path using LINQ to collection-based operations. Or as Boris would say.
+						when we refactor a code path using LINQ to collection-based operations.
 					</aside>
 				</section>
 				<section data-background="img/office-4249395_1280.jpg">
@@ -271,24 +273,25 @@
 				<section>
 					<h2 class="r-fit-text">LINQ to collection-based operations</h2>
 					<ul>
-						<li class="fragment fade-in">Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
+						<li>Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
 						</li>
-						<li class="fragment fade-in">Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
+						<li>Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
 							enumerables</li>
-						<li class="fragment fade-in">Prevent collections from growing</li>
-						<li class="fragment fade-in">Use concrete collection types</li>
-						<li class="fragment fade-in">Leverage pattern matching or
+						<li>Prevent collections from growing</li>
+						<li>Use concrete collection types</li>
+						<li>Leverage pattern matching or
 							<code>Enumerable.TryGetNonEnumeratedCount</code>
 						</li>
-						<li class="fragment fade-in">Wait with instantiating collections until really needed</li>
+						<li>Wait with instantiating collections until really needed</li>
 					</ul>
 					<aside class="notes">
-						Going back to the previous example that we have optimized already quite a bit, let's see how we
-						can apply those principles we learned above to the code. As a reminder here is how the code
-						looks like.
+						I'm not going to cover the details of these rules. I'm leaving them here for you as a reference.
+						Should you wish to dig deeper I will be handing out a link to a recording of a longer version of
+						this talk that goes into more details and shows a before and after of the code we already
+						optimized.
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
@@ -314,7 +317,7 @@
 						IReadOnlyCollection (context)
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|2-6|10|12-13|17-18" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens) {
 							IReadOnlyCollection<string> readOnlyCollection = lockTokens switch
@@ -351,13 +354,13 @@
 						because lists can automatically grow which can allocate a lot and takes time).
 					</aside>
 				</section>
-				<section data-background="img/time-g5afc932c4_1280.jpg">
+				<section data-visibility="hidden" data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Benchmarking Time!</h2>
 						<p>We can only know the before and after when we measure it.</p>
 					</div>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<div style="position:relative;">
 						<div class="fragment fade-in-then-out"
 							style="position: absolute; left:20%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(33, 168, 100, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
@@ -583,7 +586,7 @@
 							overloads that allow to pass state into the delegate.</li>
 					</ul>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
 						var someState1 = new object();
 						var someOtherState = 42;
@@ -707,7 +710,7 @@
 					</aside>
 				</section>
 			</section>
-			<section>
+			<section data-visibility="hidden">
 				<section data-background="img/excess-g121ed821c_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Avoid excessive allocations to reduce the GC overhead</h2>
@@ -769,9 +772,6 @@
 						<li>Be aware of closure allocations</li>
 						<li>Pool and re-use buffers</li>
 						<li>For smaller local buffers, consider using the stack</li>
-						<li>Be aware of parameter overloads</li>
-						<li style="color: lightslategray">Where possible and feasible use value types but pay
-							attention to unnecessary boxing</li>
 					</ul>
 				</ul>
 			</section>
@@ -790,11 +790,11 @@
 							variable length without having to copy the memory</li>
 						<li>Span&lt;T&gt; can only live on the stack while its cousin Memory&lt;T&gt; can live on the
 							heap and therefore be used in asynchronous methods.</li>
-						<li>We want rules I know. Or how boris would say</li>
+						<li>We want rules I know.</li>
 					</ul>
 				</aside>
 			</section>
-			<section>
+			<section data-visibility="hidden">
 				<section data-background="img/plotter-2138990_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
@@ -983,7 +983,7 @@
 							<code>Span</code> or
 							<code>Memory</code> based variants
 						</li>
-						<li>Watch out for immutable/readonly data that is copied</li>
+						<li style="color: lightslategray">Watch out for immutable/readonly data that is copied</li>
 					</ul>
 				</section>
 			</section>
@@ -993,9 +993,6 @@
 						<li>Avoid excessive allocations to reduce the GC overhead</li>
 						<ul>
 							<li>Be aware of closure allocations</li>
-							<li>Be aware of parameter overloads</li>
-							<li>Where possible and feasible use value types <br />but pay
-								attention to unnecessary boxing</li>
 							<li>Think at least twice before using LINQ <br /> or
 								unnecessary enumeration on the hot path</li>
 							<ul>
@@ -1026,7 +1023,7 @@
 						</li>
 					</ul>
 				</section>
-				<section data-background="img/quiz-2137664_1280.jpg">
+				<section data-visibility="hidden" data-background="img/quiz-2137664_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">In case you are up for a challenge</h2>
 						<p>The original <code style="color: lightskyblue;">ComputeHash</code> method had a <i

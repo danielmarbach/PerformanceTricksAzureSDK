@@ -6,6 +6,7 @@ Over the past few years, I've contributed over fifty pull requests to the Azure 
 
 - [Slides Online](https://danielmarbach.github.io/PerformanceTricksAzureSDK)
 - [Slides PDF](/slides/presentation.pdf)
+- [Long Version of the talk](https://www.youtube.com/watch?v=ztABfkJozXQ)
 
 ## Introduction
 
