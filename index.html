@@ -35,7 +35,8 @@
 					</p>
 				</div>
 			</section>
-			<section data-background-image="img/dotnetday-sponsors.jpg" data-background-size="contain" data-background-repeat="no-repeat">
+			<section data-background-image="img/dotnetday-sponsors.jpg" data-background-size="contain"
+				data-background-repeat="no-repeat">
 			</section>
 			<section>
 				<section data-background="img/architecture-g104d6d62d_1280.jpg">
@@ -284,11 +285,13 @@
 						</li>
 						<li>Wait with instantiating collections until really needed</li>
 					</ul>
+					<!-- For the short 45 min version -->
 					<aside class="notes">
 						I'm not going to cover the details of these rules. I'm leaving them here for you as a reference.
 						Should you wish to dig deeper I will be handing out a link to a recording of a longer version of
 						this talk that goes into more details and shows a before and after of the code we already
-						optimized.
+						optimized. Just to show you what gains we can achieve in the best case here is the improvements
+						we can by applying all those rules to the previous code in the best/optimal case.
 					</aside>
 				</section>
 				<section data-visibility="hidden">
@@ -360,7 +363,7 @@
 						<p>We can only know the before and after when we measure it.</p>
 					</div>
 				</section>
-				<section data-visibility="hidden">
+				<section>
 					<div style="position:relative;">
 						<div class="fragment fade-in-then-out"
 							style="position: absolute; left:20%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(33, 168, 100, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
@@ -368,12 +371,15 @@
 								<i class="fa fa-trash-o"></i> ~23-61%
 							</p>
 						</div>
+						<!-- Removed for the short 45 min version -->
+						<!--
 						<div class="fragment fade-in"
 							style="position: absolute; left:20%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(168, 114, 33, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
 							<p><i class="fa fa-tachometer" aria-hidden="true"></i> +56%<br />
 								<i class="fa fa-trash-o"></i> ~23-61%
 							</p>
 						</div>
+						-->
 						<img src="benchmarks/LinqAfterComparisonCropped.png" />
 					</div>
 					<aside class="notes">
