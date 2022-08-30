@@ -61,13 +61,13 @@
 					</div>
 					<aside class="notes">
 						<ul>
+							<li>"Wow, that's crazy, is the complexity of this change really worth it? Isn't that
+								premature optimization?" </li>
 							<li>Some optimizations shown here are sometimes called out as esoteric.
 							</li>
 							<li>Don't jump to conclusions and apply them blindly.</li>
 							<li>Code executed under scale it matters: More efficient in resource usage, execution time,
 								throughput and memory usage</li>
-							<li>"Wow, that's crazy, is the complexity of this change really worth it? Isn't that
-								premature optimization?" </li>
 							<li>Performance improvements can be addictive, nobody likes to optimize code that is fast
 								enough or only executed once a day.</li>
 							<li>But what does at scale even mean? How can I find out whether the optimizations I'm
@@ -371,15 +371,12 @@
 								<i class="fa fa-trash-o"></i> ~23-61%
 							</p>
 						</div>
-						<!-- Removed for the short 45 min version -->
-						<!--
 						<div class="fragment fade-in"
 							style="position: absolute; left:20%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(168, 114, 33, 0.9); color: #fff; padding: 25px; font-size: 25px; text-align: center;">
 							<p><i class="fa fa-tachometer" aria-hidden="true"></i> +56%<br />
 								<i class="fa fa-trash-o"></i> ~23-61%
 							</p>
 						</div>
-						-->
 						<img src="benchmarks/LinqAfterComparisonCropped.png" />
 					</div>
 					<aside class="notes">
@@ -989,7 +986,6 @@
 							<code>Span</code> or
 							<code>Memory</code> based variants
 						</li>
-						<li style="color: lightslategray">Watch out for immutable/readonly data that is copied</li>
 					</ul>
 				</section>
 			</section>
@@ -1018,7 +1014,6 @@
 						</ul>
 						<li>Avoid unnecessary copying of memory
 							<ul>
-								<li>Watch out for immutable/readonly data that is copied</li>
 								<li>Look for Stream and Byte-Array usages that are copied or manipulated without using
 									<code>Span</code> or <code>Memory</code>
 								</li>
