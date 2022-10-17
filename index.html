@@ -5,7 +5,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-	<title>Performance tricks I learned from contributing to the Azure .NET SDK</title>
+	<title>Performance tricks I learned from contributing open source .NET packages</title>
 	<meta name="author" content="Daniel Marbach">
 
 	<link rel="stylesheet" href="dist/reset.css">
@@ -24,8 +24,8 @@
 			<section data-background="img/juggler-trick-magician-juggle-1216853.jpg">
 				<div style="left: 10; width: 52%; padding: 25px; font-size: 30px; text-align: left;">
 					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from
-						contributing to the Azure .NET SDK</h3>
-					<p style="text-transform: none;color: rgba(31, 129, 74, 0.6); font-size: small;">
+						contributing to open source .NET packages</h3>
+					<p style="text-transform: none;color: rgba(31, 129, 74, 0.6); font-size: medium;">
 						<i class="fa fa-twitter" aria-hidden="true"><a
 								style="text-transform: none;color: rgba(31, 129, 74, 0.6)"
 								href="https://twitter.com/danielmarbach"> danielmarbach</a> |</i>
@@ -35,7 +35,7 @@
 					</p>
 				</div>
 			</section>
-			<section data-background-image="img/dotnetday-sponsors.jpg" data-background-size="contain"
+			<section data-background-image="img/netday-warsaw-sponsors.jpg" data-background-size="contain"
 				data-background-repeat="no-repeat">
 			</section>
 			<section>
@@ -274,27 +274,25 @@
 				<section>
 					<h2 class="r-fit-text">LINQ to collection-based operations</h2>
 					<ul>
-						<li>Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
+						<li class="fragment fade-in">Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
 						</li>
-						<li>Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
+						<li class="fragment fade-in">Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
 							enumerables</li>
-						<li>Prevent collections from growing</li>
-						<li>Use concrete collection types</li>
-						<li>Leverage pattern matching or
+						<li class="fragment fade-in">Prevent collections from growing</li>
+						<li class="fragment fade-in">Use concrete collection types</li>
+						<li class="fragment fade-in">Leverage pattern matching or
 							<code>Enumerable.TryGetNonEnumeratedCount</code>
 						</li>
-						<li>Wait with instantiating collections until really needed</li>
+						<li class="fragment fade-in">Wait with instantiating collections until really needed</li>
 					</ul>
 					<!-- For the short 45 min version -->
 					<aside class="notes">
-						I'm not going to cover the details of these rules. I'm leaving them here for you as a reference.
-						Should you wish to dig deeper I will be handing out a link to a recording of a longer version of
-						this talk that goes into more details and shows a before and after of the code we already
-						optimized. Just to show you what gains we can achieve in the best case here is the improvements
-						we can by applying all those rules to the previous code in the best/optimal case.
+						Going back to the previous example that we have optimized already quite a bit, let's see how we
+						can apply those principles we learned above to the code. As a reminder here is how the code
+						looks like.
 					</aside>
 				</section>
-				<section data-visibility="hidden">
+				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
@@ -320,7 +318,7 @@
 						IReadOnlyCollection (context)
 					</aside>
 				</section>
-				<section data-visibility="hidden">
+				<section>
 					<pre class="stretch" style="font-size: 0.4em"><code class="language-csharp" data-line-numbers="|2-6|10|12-13|17-18" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens) {
 							IReadOnlyCollection<string> readOnlyCollection = lockTokens switch
@@ -357,7 +355,7 @@
 						because lists can automatically grow which can allocate a lot and takes time).
 					</aside>
 				</section>
-				<section data-visibility="hidden" data-background="img/time-g5afc932c4_1280.jpg">
+				<section data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Benchmarking Time!</h2>
 						<p>We can only know the before and after when we measure it.</p>
@@ -504,7 +502,7 @@
 						We can augment this code to accept an input T1 and return an output. The input argument or state
 						is then passed into the operation method.
 						With that trick we can build a library tool that allows to deal with functions that return state
-						as well as actions that return nothing. Essentailly properly modelling void to make functional
+						as well as actions that return nothing. Essentially properly modelling void to make functional
 						programmers happy.
 					</aside>
 				</section>
@@ -589,7 +587,7 @@
 							overloads that allow to pass state into the delegate.</li>
 					</ul>
 				</section>
-				<section data-visibility="hidden">
+				<section>
 					<pre style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
 						var someState1 = new object();
 						var someOtherState = 42;
@@ -775,6 +773,9 @@
 						<li>Be aware of closure allocations</li>
 						<li>Pool and re-use buffers</li>
 						<li>For smaller local buffers, consider using the stack</li>
+						<li style="color: lightslategray">Be aware of parameter overloads</li>
+						<li style="color: lightslategray">Where possible and feasible use value types but pay
+							attention to unnecessary boxing</li>
 					</ul>
 				</ul>
 			</section>
@@ -995,6 +996,9 @@
 						<li>Avoid excessive allocations to reduce the GC overhead</li>
 						<ul>
 							<li>Be aware of closure allocations</li>
+							<li>Be aware of parameter overloads</li>
+							<li>Where possible and feasible use value types <br />but pay
+								attention to unnecessary boxing</li>
 							<li>Think at least twice before using LINQ <br /> or
 								unnecessary enumeration on the hot path</li>
 							<ul>
@@ -1024,7 +1028,7 @@
 						</li>
 					</ul>
 				</section>
-				<section data-visibility="hidden" data-background="img/quiz-2137664_1280.jpg">
+				<section data-background="img/quiz-2137664_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">In case you are up for a challenge</h2>
 						<p>The original <code style="color: lightskyblue;">ComputeHash</code> method had a <i
