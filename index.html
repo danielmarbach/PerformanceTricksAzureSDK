@@ -987,6 +987,7 @@
 							<code>Span</code> or
 							<code>Memory</code> based variants
 						</li>
+						<li style="color: lightslategray">Watch out for immutable/readonly data that is copied</li>
 					</ul>
 				</section>
 			</section>
@@ -1018,6 +1019,7 @@
 						</ul>
 						<li>Avoid unnecessary copying of memory
 							<ul>
+								<li>Watch out for immutable/readonly data that is copied</li>
 								<li>Look for Stream and Byte-Array usages that are copied or manipulated without using
 									<code>Span</code> or <code>Memory</code>
 								</li>
