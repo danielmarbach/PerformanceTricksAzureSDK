@@ -504,7 +504,7 @@
 					</aside>
 				</section>
 				<section>
-					<pre class="" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12" data-trim data-noescape><script type="text/template">
+					<pre class="" style="font-size: 0.5em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12|8,12|6,8,9,12" data-trim data-noescape><script type="text/template">
 						internal async ValueTask RunOperation<T1>(
 							Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
 							T1 t1,
@@ -776,7 +776,7 @@
 						<li style="color: lightslategray">Be aware of parameter overloads</li>
 						<li style="color: lightslategray">Where possible and feasible use value types but pay
 							attention to unnecessary boxing</li>
-						<li style="color: lightslategray">Move allocations away from the hot-path where possible</li>	
+						<li style="color: lightslategray">Move allocations away from the hot-path where possible</li>
 					</ul>
 				</ul>
 			</section>
@@ -1092,6 +1092,8 @@
 								is done the principles and practices here can make your code even faster.</li>
 							<li>Optimizations can also be efficiently combined with refactorings and redesigns on
 								the hot path.</li>
+							<li>8% increase in overall publishing throughout for the last Event Hubs release, and like a
+								3-4% for the processor.</li>
 							<li>For us, as engineers, it means we have to know what to ignore and knowing what to pay
 								close
 								attention to in the code base we are working. And sometimes that will mean ignoring the
