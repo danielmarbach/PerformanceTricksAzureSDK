@@ -589,7 +589,7 @@
 				</section>
 				<section data-visibility="hidden">
 					<pre class="fit" style="font-size: 0.8em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
-						var someState1 = new object();
+						var someState = new object();
 						var someOtherState = 42;
 
 						var dictionary = new ConcurrentDictionary<string, string>();
@@ -598,7 +598,7 @@
 							var (someState, someOtherState) = state;
 
 							return $"{someState}_{someOtherState}";
-						}, (someState1, someOtherState));
+						}, (someState, someOtherState));
 						</script></code></pre>
 					<medium class="code-header">Remove closure allocations.</medium>
 				</section>
