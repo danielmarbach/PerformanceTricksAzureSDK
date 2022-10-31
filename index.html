@@ -36,7 +36,7 @@
 				</div>
 			</section>
 			<section>
-				<section data-background="img/architecture-g104d6d62d_1280.jpg">
+				<section data-visibility="hidden" data-background="img/architecture-g104d6d62d_1280.jpg">
 					<div class="image-slide-box">
 						<h2>Introduction</h2>
 						<p>Focus on performance optimization in .NET Code and not architecture.</p>
@@ -67,14 +67,15 @@
 								throughput and memory usage</li>
 							<li>Performance improvements can be addictive, nobody likes to optimize code that is fast
 								enough or only executed once a day.</li>
-							<li>But what does at scale even mean? How can I find out whether the optimizations I'm
-								trying to make have value, and I'm not getting called out by my colleagues for premature
-								optimizations?</li>
+							<li>Discover the assumptions that have accumulated over time</li>
+							<li>Pay close attention to what is instantiated, parsed, processed etc. per request</li>
+							<li>How those assumptions in the code base affect the performance characteristics (memory,
+									throughput...) at scale</li>
 						</ul>
 					</aside>
 				</section>
 			</section>
-			<section data-background="img/owl-1576572_1280.jpg">
+			<section data-visibility="hidden" data-background="img/owl-1576572_1280.jpg">
 				<div
 					style="margin-left: auto; margin-right: 10; width: 35%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 25px; font-size: 50px; text-align: left;">
 					<h5>At Scale implementation details matter</h5>
@@ -99,7 +100,7 @@
 					</ul>
 				</aside>
 			</section>
-			<section>
+			<section data-visibility="hidden">
 				<section data-background="img/office-4249395_1280.jpg">
 					<aside class="notes">
 						As developers and engineers we want rules that we can apply. I have compiled them based on my
@@ -404,7 +405,7 @@
 						that access state from the outside of the lambda.
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="stretch" style="font-size: 0.9em"><code class="language-csharp" data-line-numbers="|1|2|13" data-trim data-noescape><script type="text/template">
 						async Task RunOperation(
 							Func<TimeSpan, Task> operation,
@@ -433,7 +434,7 @@
 						(like RetryAfter when busy).
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="" style="font-size: 0.7em"><code class="language-csharp" data-line-numbers="|1,4-5" data-trim data-noescape><script type="text/template">
 						TransportMessageBatch messageBatch = null;
 						Task createBatchTask = _retryPolicy.RunOperation(async (timeout) =>
@@ -452,7 +453,7 @@
 						Decompile the code.
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="" style="font-size: 0.7em"><code class="language-csharp" data-line-numbers="|2,8" data-trim data-noescape><script type="text/template">
 						if (num1 != 0)	{
 							this.\u003C\u003E8__1 = new AmqpSender.\u003C\u003Ec__DisplayClass16_0();
@@ -471,7 +472,7 @@
 						</script></code></pre>
 					<medium class="code-header">Remove closure allocations.</medium>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="stretch" style="font-size: 0.9em"><code class="language-csharp" data-line-numbers="|1|2,3|14" data-trim data-noescape><script type="text/template">
 						internal async ValueTask<TResult> RunOperation<T1, TResult>(
 							Func<T1, TimeSpan, CancellationToken, ValueTask<TResult>> operation,
@@ -503,7 +504,7 @@
 						programmers happy.
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="" style="font-size: 0.60em"><code class="language-csharp" data-line-numbers="|1|2,3|6,8,9,12|8,12|6,8,9,12" data-trim data-noescape><script type="text/template">
 						internal async ValueTask RunOperation<T1>(
 							Func<T1, TimeSpan, CancellationToken, ValueTask> operation,
@@ -532,7 +533,7 @@
 						</ul>
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="" style="font-size: 0.6em"><code class="language-csharp" data-line-numbers="|4,9" data-trim data-noescape><script type="text/template">
 						if (num1 != 0) {
 							configuredTaskAwaiter = t1._retryPolicy
@@ -556,6 +557,67 @@
 						To demonstrate how these can add up in real-world scenarios, let me show you a before and after
 						comparison when I removed the closure allocations for NServiceBus pipeline execution
 					</aside>
+				</section>
+				<section>
+					<pre class="fit" style="font-size: 0.9em"><code class="language-csharp" data-line-numbers="|7-9" data-trim data-noescape><script type="text/template">
+						var someState = new object();
+						var someOtherState = 42;
+
+						var dictionary = new ConcurrentDictionary<string, string>();
+
+						dictionary.GetOrAdd("SomeKey", (key) => 
+						{
+							return $"{someState}_{someOtherState}";
+						});
+						</script></code></pre>
+					<medium class="code-header">Remove closure allocations.</medium>
+				</section>
+				<section>
+					<pre class="" style="font-size: 0.8em"><code class="language-csharp" data-line-numbers="|1,6" data-trim data-noescape><script type="text/template">
+						<>c__DisplayClass0_0 <>c__DisplayClass0_ = new <>c__DisplayClass0_0();
+						<>c__DisplayClass0_.someState = new object();
+						<>c__DisplayClass0_.someOtherState = 42;
+						
+						concurrentDictionary.GetOrAdd("SomeKey", 
+							new Func<string, string>(<>c__DisplayClass0_.<<Main>$>b__0));
+						</script></code></pre>
+					<medium class="code-header">Remove closure allocations.</smmediumall>
+				</section>
+				<section>
+					<pre class="fit" style="font-size: 0.9em"><code class="language-csharp" data-line-numbers="|3|5,8" data-trim data-noescape><script type="text/template">
+						// same as before
+
+						dictionary.GetOrAdd("SomeKey", static (key, state) => 
+						{
+							var (someState, someOtherState) = state;
+
+							return $"{someState}_{someOtherState}";
+						}, (someState, someOtherState));
+						</script></code></pre>
+					<medium class="code-header">Remove closure allocations.</medium>
+					<aside class="notes">
+						<ul>
+							<li>Switch to ValueTask because some operations returned value tasks</li>
+							<li>Use CSharp 9 static lambda features to make it impossible to access state within the
+								delegate that is outside</li>
+							<li>Use the state argument to pass in the state from the method including the operation as a
+								value tuple into the function</li>
+							<li>Deconstruct the value tuple and execute the operation passing all necessary state to it.
+							</li>
+						</ul>
+					</aside>
+				</section>
+				<section>
+					<pre class="" style="font-size: 0.65em"><code class="language-csharp" data-line-numbers="|5" data-trim data-noescape><script type="text/template">
+						object item = new object();
+						int item2 = 42;
+
+						concurrentDictionary.GetOrAdd("SomeKey", 
+							<>c.<>9__0_0 ?? (<>c.<>9__0_0 = 
+								new Func<string, ValueTuple<object, int>, string>(<>c.<>9.<<Main>$>b__0_0)), 
+									new ValueTuple<object, int>(item, item2));
+						</script></code></pre>
+					<medium class="code-header">Remove closure allocations.</smmediumall>
 				</section>
 				<section>
 					<div style="position:relative;">
@@ -586,21 +648,6 @@
 						<li class="fragment fade-in">Many built-in .NET types that use delegates have nowadays generic
 							overloads that allow to pass state into the delegate.</li>
 					</ul>
-				</section>
-				<section data-visibility="hidden">
-					<pre class="fit" style="font-size: 0.8em"><code class="language-csharp" data-line-numbers="" data-trim data-noescape><script type="text/template">
-						var someState = new object();
-						var someOtherState = 42;
-
-						var dictionary = new ConcurrentDictionary<string, string>();
-
-						dictionary.GetOrAdd("SomeKey", static (key, state) => {
-							var (someState, someOtherState) = state;
-
-							return $"{someState}_{someOtherState}";
-						}, (someState, someOtherState));
-						</script></code></pre>
-					<medium class="code-header">Remove closure allocations.</medium>
 				</section>
 			</section>
 			<section>
@@ -778,7 +825,7 @@
 					</ul>
 				</ul>
 			</section>
-			<section data-background="img/plotter-2138990_1280.jpg">
+			<section data-visibility="hidden" data-background="img/plotter-2138990_1280.jpg">
 				<div class="image-slide-box">
 					<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
 				</div>
@@ -848,7 +895,7 @@
 					</aside>
 				</section>
 			</section>
-			<section>
+			<section data-visibility="hidden">
 				<section data-background="img/plotter-2138990_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Avoid unnecessary copying of memory</h2>
