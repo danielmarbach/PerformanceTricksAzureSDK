@@ -825,7 +825,7 @@
 			</section>
 			<section data-background="img/office-4249395_1280.jpg">
 			</section>
-			<section>
+			<section data-visibility="hidden">
 				<ul>
 					<li>Avoid excessive allocations to reduce the GC overhead</li>
 					<ul>
@@ -1054,7 +1054,7 @@
 			</section>
 			<section>
 				<section>
-					<ul>
+					<ul class="r-fit-text">
 						<li>Avoid excessive allocations to reduce the GC overhead</li>
 						<ul>
 							<li>Be aware of closure allocations</li>
@@ -1074,6 +1074,9 @@
 							</ul>
 							<li>Pool and re-use buffers</li>
 							<li>For smaller local buffers, consider using the stack</li>
+							<li>Be aware of parameter overloads</li>
+							<li>Where possible and feasible use value types but pay
+								attention to unnecessary boxing</li>
 							<li>Move allocations away from the hot-path where possible</li>
 						</ul>
 						<li>Avoid unnecessary copying of memory
@@ -1123,7 +1126,7 @@
 						style="width: 70%; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.8); color: rgb(255, 255, 255); padding: 25px; font-size: 50px; text-align: left;">
 						<h5>At Scale implementation details matter</h5>
 						<div>
-							<p><img src="img/repolink.svg" height="100" style="float: right; margin-top: auto;" />Tweak
+							<p><img src="img/repolink.svg" style="float: right; margin-top: auto;" />Tweak
 								expensive I/O operations first. <br />Pay close attention to the context of the
 								code.<br />
 								Apply the principles where they matter. <br />Everywhere else, favor readability.
