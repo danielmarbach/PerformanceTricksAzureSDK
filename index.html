@@ -825,7 +825,7 @@
 			</section>
 			<section data-background="img/office-4249395_1280.jpg">
 			</section>
-			<section>
+			<section data-visibility="hidden">
 				<ul>
 					<li>Avoid excessive allocations to reduce the GC overhead</li>
 					<ul>
@@ -1074,6 +1074,9 @@
 							</ul>
 							<li>Pool and re-use buffers</li>
 							<li>For smaller local buffers, consider using the stack</li>
+							<li>Be aware of parameter overloads</li>
+							<li>Where possible and feasible use value types but pay
+								attention to unnecessary boxing</li>
 							<li>Move allocations away from the hot-path where possible</li>
 						</ul>
 						<li>Avoid unnecessary copying of memory
