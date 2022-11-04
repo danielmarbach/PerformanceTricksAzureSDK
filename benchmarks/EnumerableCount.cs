@@ -18,6 +18,7 @@ public class EnumerableCount
             AddJob(Job.ShortRun.WithInvocationCount(16000000));
         }
     }
+
     [IterationSetup]
     public void Setup()
     {
