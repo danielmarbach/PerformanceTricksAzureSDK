@@ -10,6 +10,10 @@
     text-align: left;
 }
 
+.image-slide-box h2 {
+    color: #fff !important;
+}
+
 .code-header {
     text-transform: none;
     color: gray;
