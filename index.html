@@ -23,8 +23,7 @@
 		<div class="slides">
 			<section data-background="img/juggler-trick-magician-juggle-1216853.jpg">
 				<div style="left: 10; width: 52%; padding: 25px; font-size: 50px; text-align: left;">
-					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from
-						contributing to open source .NET packages</h3>
+					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from contributing to the Azure .NET SDK</h3>
 					<p style="text-transform: none;color: rgba(31, 129, 74, 0.6); font-size: 30px;">
 						<i class="fa fa-twitter" aria-hidden="true"><a
 								style="text-transform: none;color: rgba(31, 129, 74, 0.6)"
@@ -44,7 +43,8 @@
 							repository so that you can have a headstart should you wish to start applying performance
 							optimization techniques in your code bases.</li>
 					</ul>
-				</aside>			</section>
+				</aside>			
+			</section>
 			<section>
 				<section data-visibility="hidden" data-background="img/architecture-g104d6d62d_1280.jpg">
 					<div class="image-slide-box">
@@ -278,7 +278,7 @@
 						experience.
 					</aside>
 				</section>
-				<section>
+				<section data-auto-animate>
 					<h2 class="r-fit-text">LINQ to collection-based operations</h2>
 					<ul class="r-fit-text">
 						<li>Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
@@ -291,6 +291,29 @@
 							<code>Enumerable.TryGetNonEnumeratedCount</code>
 						</li>
 						<li>Wait with instantiating collections until really needed</li>
+					</ul>
+					<!-- For the short 45 min version -->
+					<aside class="notes">
+						I'm not going to cover the details of these rules. I'm leaving them here for you as a reference.
+						Should you wish to dig deeper I will be handing out a link to a recording of a longer version of
+						this talk that goes into more details and shows a before and after of the code we already
+						optimized. Just to show you what gains we can achieve in the best case here is the improvements
+						we can by applying all those rules to the previous code in the best/optimal case.
+					</aside>
+				</section>
+				<section data-auto-animate>
+					<h2 class="r-fit-text">LINQ to collection-based operations</h2>
+					<ul class="r-fit-text">
+						<li style="color: lightslategray">Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
+						</li>
+						<li style="color: lightslategray">Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
+							enumerables</li>
+						<li>Prevent collections from growing</li>
+						<li style="color: lightslategray">Use concrete collection types</li>
+						<li style="color: lightslategray">Leverage pattern matching or
+							<code>Enumerable.TryGetNonEnumeratedCount</code>
+						</li>
+						<li style="color: lightslategray">Wait with instantiating collections until really needed</li>
 					</ul>
 					<!-- For the short 45 min version -->
 					<aside class="notes">
