@@ -1,0 +1,28 @@
+{
+	"name": "Dev",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": { "VARIANT": "18" }
+	},
+    "postCreateCommand": "npm install",
+	"postStartCommand": "npm run start",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"eg2.vscode-npm-script",
+				"christian-kohler.npm-intellisense",
+                "ecmel.vscode-html-css",
+                "esbenp.prettier-vscode",
+                "formulahendry.auto-close-tag",
+                "pranaygp.vscode-css-peek"
+			]
+		}
+	},
+	"forwardPorts": [8000, 35729],
+	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+	"remoteUser": "node",
+	"features": {
+
+	}
+}
