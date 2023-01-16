@@ -301,30 +301,7 @@
 						we can by applying all those rules to the previous code in the best/optimal case.
 					</aside>
 				</section>
-				<section data-auto-animate>
-					<h2 class="r-fit-text">LINQ to collection-based operations</h2>
-					<ul class="r-fit-text">
-						<li>Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
-						</li>
-						<li>Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
-							enumerables</li>
-						<li>Prevent collections from growing</li>
-						<li>Use concrete collection types</li>
-						<li>Leverage pattern matching or
-							<code>Enumerable.TryGetNonEnumeratedCount</code>
-						</li>
-						<li>Wait with instantiating collections until really needed</li>
-					</ul>
-					<!-- For the short 45 min version -->
-					<aside class="notes">
-						I'm not going to cover the details of these rules. I'm leaving them here for you as a reference.
-						Should you wish to dig deeper I will be handing out a link to a recording of a longer version of
-						this talk that goes into more details and shows a before and after of the code we already
-						optimized. Just to show you what gains we can achieve in the best case here is the improvements
-						we can by applying all those rules to the previous code in the best/optimal case.
-					</aside>
-				</section>
-				<section data-visibility="hidden">
+				<section>
 					<pre class="stretch" style="font-size: 0.8em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
@@ -350,7 +327,7 @@
 						IReadOnlyCollection (context)
 					</aside>
 				</section>
-				<section data-visibility="hidden">
+				<section>
 					<pre class="stretch" style="font-size: 0.7em"><code class="language-csharp" data-line-numbers="|2-6|10|12-13|17-18" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens) {
 							IReadOnlyCollection<string> readOnlyCollection = lockTokens switch
@@ -387,7 +364,7 @@
 						because lists can automatically grow which can allocate a lot and takes time).
 					</aside>
 				</section>
-				<section data-visibility="hidden" data-background="img/time-g5afc932c4_1280.jpg">
+				<section data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Benchmarking Time!</h2>
 						<p>We can only know the before and after when we measure it.</p>
