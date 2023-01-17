@@ -3,7 +3,8 @@
 
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="viewport"
+		content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 	<title>Performance tricks I learned from contributing open source .NET packages</title>
 	<meta name="author" content="Daniel Marbach">
@@ -23,7 +24,8 @@
 		<div class="slides">
 			<section data-background="img/juggler-trick-magician-juggle-1216853.jpg">
 				<div style="left: 10; width: 52%; padding: 25px; font-size: 50px; text-align: left;">
-					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from contributing to the Azure .NET SDK</h3>
+					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from
+						contributing to the Azure .NET SDK</h3>
 					<p style="text-transform: none;color: rgba(31, 129, 74, 0.6); font-size: 30px;">
 						<i class="fa fa-twitter" aria-hidden="true"><a
 								style="text-transform: none;color: rgba(31, 129, 74, 0.6)"
@@ -43,7 +45,7 @@
 							repository so that you can have a headstart should you wish to start applying performance
 							optimization techniques in your code bases.</li>
 					</ul>
-				</aside>			
+				</aside>
 			</section>
 			<section>
 				<section data-background="img/architecture-g104d6d62d_1280.jpg">
@@ -76,7 +78,7 @@
 							<li>Performance improvements can be addictive, nobody likes to optimize code that is fast
 								enough or only executed once a day.</li>
 							<li>Code executed under scale it matters: More efficient in resource usage, execution time,
-									throughput and memory usage</li>
+								throughput and memory usage</li>
 						</ul>
 					</aside>
 				</section>
@@ -556,13 +558,13 @@
 						}
 						</script></code></pre>
 					<medium class="code-header">Remove closure allocations.</smmediumall>
-					<aside class="notes">
-						With that small change, we save the display class and the function delegate allocations and can
-						properly usage methods that support value tasks without having to allocate a task instance when
-						not necessary.
-						To demonstrate how these can add up in real-world scenarios, let me show you a before and after
-						comparison when I removed the closure allocations for NServiceBus pipeline execution
-					</aside>
+						<aside class="notes">
+							With that small change, we save the display class and the function delegate allocations and
+							can
+							properly usage methods that support value tasks without having to allocate a task instance
+							when
+							not necessary.
+						</aside>
 				</section>
 				<section data-visibility="hidden">
 					<pre class="fit" style="font-size: 0.9em"><code class="language-csharp" data-line-numbers="|7-9" data-trim data-noescape><script type="text/template">
@@ -631,7 +633,8 @@
 						<p>We can only know the before and after when we measure it.</p>
 					</div>
 				</section>
-				<section data-visibility="hidden" data-background="benchmarks/ConcurrentDictionaryGetOrAdd.png" data-background-size="95%">
+				<section data-visibility="hidden" data-background="benchmarks/ConcurrentDictionaryGetOrAdd.png"
+					data-background-size="95%">
 					<div style="position:relative;">
 						<div class="fragment fade-in"
 							style="position: absolute; left:17%; top:35%; width: 60%; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(33, 168, 100, 0.9); color: #fff; padding: 25px; font-size: 50px; text-align: center;">
@@ -656,6 +659,11 @@
 						<li class="fragment fade-in">Many built-in .NET types that use delegates have nowadays generic
 							overloads that allow to pass state into the delegate.</li>
 					</ul>
+					<aside class="notes">
+						To demonstrate how these can add up in real-world scenarios, let me show you a before and
+						after
+						comparison when I removed the closure allocations for NServiceBus pipeline execution
+					</aside>
 				</section>
 				<section>
 					<div style="position:relative;">
