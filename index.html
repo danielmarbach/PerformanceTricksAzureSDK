@@ -299,7 +299,7 @@
 						we can by applying all those rules to the previous code in the best/optimal case.
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="stretch" style="font-size: 0.8em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
@@ -325,7 +325,7 @@
 						IReadOnlyCollection (context)
 					</aside>
 				</section>
-				<section>
+				<section data-visibility="hidden">
 					<pre class="stretch" style="font-size: 0.7em"><code class="language-csharp" data-line-numbers="|2-6|10|12-13|17-18" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens) {
 							IReadOnlyCollection<string> readOnlyCollection = lockTokens switch
@@ -362,7 +362,7 @@
 						because lists can automatically grow which can allocate a lot and takes time).
 					</aside>
 				</section>
-				<section data-background="img/time-g5afc932c4_1280.jpg">
+				<section data-visibility="hidden" data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Benchmarking Time!</h2>
 						<p>We can only know the before and after when we measure it.</p>
@@ -1104,7 +1104,7 @@
 						</li>
 					</ul>
 				</section>
-				<section data-background="img/quiz-2137664_1280.jpg">
+				<section data-visibility="hidden" data-background="img/quiz-2137664_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">In case you are up for a challenge</h2>
 						<p>The original <code style="color: lightskyblue;">ComputeHash</code> method had a <i
