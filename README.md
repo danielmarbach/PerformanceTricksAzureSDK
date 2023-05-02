@@ -405,14 +405,50 @@ With the introduction of `Span<T>` and the `stackalloc` keyword, we can directly
 
 The question is though why would you even take a defensive copy of the bytes from the network here when you already have `ReadOnlySpan<T>` support on the Guid constructor in newer versions of .NET. The best version would be to not copy memory at all and directly pass the sliced network bytes to initialize the Guid. We will be talking about techniques of how to avoid memory copying later. Where you have to copy memory though this technique comes in handy.
 
-Due to having to target .NET Standard 2.0, where we can only pass `byte[]` to the Guid constructor, the actual version was a bit more complicated and the above example is slightly twisting the reality, call it artistic freedom.
+Due to having to target .NET Standard 2.0, where we can only pass `byte[]` to the Guid constructor and we have to take endianness into account, the actual version was a bit more complicated and the above example is slightly twisting the reality, call it artistic freedom.
 
 ```csharp
-Span<byte> guidBytes = stackalloc byte[GuidSizeInBytes];
-amqpMessage.DeliveryTag.AsSpan().CopyTo(guidBytes);
-if (!MemoryMarshal.TryRead<Guid>(guidBytes, out var lockTokenGuid))
+if (GuidUtilities.TryParseGuidBytes(amqpMessage.DeliveryTag, out Guid lockTokenGuid))
 {
-    lockTokenGuid = new Guid(guidBytes.ToArray());
+    // use lock tocken
+};
+
+static class GuidUtilities
+{
+    private const int GuidSizeInBytes = 16;
+
+    public static bool TryParseGuidBytes(ReadOnlySpan<byte> bytes, out Guid guid)
+    {
+        if (bytes.Length != GuidSizeInBytes)
+        {
+            guid = default;
+            return false;
+        }
+
+        if (BitConverter.IsLittleEndian)
+        {
+            // copies the bytes
+            guid = MemoryMarshal.Read<Guid>(bytes);
+            return true;
+        }
+
+        // copied from https://github.com/dotnet/runtime/blob/9129083c2fc6ef32479168f0555875b54aee4dfb/src/libraries/System.Private.CoreLib/src/System/Guid.cs#L49
+        // slower path for BigEndian:
+        byte k = bytes[15];  // hoist bounds checks
+        int a = BinaryPrimitives.ReadInt32LittleEndian(bytes);
+        short b = BinaryPrimitives.ReadInt16LittleEndian(bytes.Slice(4));
+        short c = BinaryPrimitives.ReadInt16LittleEndian(bytes.Slice(6));
+        byte d = bytes[8];
+        byte e = bytes[9];
+        byte f = bytes[10];
+        byte g = bytes[11];
+        byte h = bytes[12];
+        byte i = bytes[13];
+        byte j = bytes[14];
+
+        guid = new Guid(a, b, c, d, e, f, g, h, i, j, k);
+        return true;
+    }
 }
 ```
 
