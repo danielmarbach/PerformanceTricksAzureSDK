@@ -289,6 +289,11 @@
 							<code>Enumerable.TryGetNonEnumeratedCount</code>
 						</li>
 						<li>Wait with instantiating collections until really needed</li>
+						<li>There be dragons</li>
+						<ul>
+							<li>Align access or use unsafe avoid bound checks</li>
+							<li>Use <a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal">CollectionMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal">MemoryMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe">Unsafe</a> to access the underlying data directly</li>
+						</ul>
 					</ul>
 					<!-- For the short 45 min version -->
 					<aside class="notes">
@@ -1083,6 +1088,11 @@
 									<code>Enumerable.TryGetNonEnumeratedCount</code>
 								</li>
 								<li>Wait with instantiating collections until really needed</li>
+								<li>There be dragons</li>
+								<ul>
+									<li>Align access or use unsafe avoid bound checks</li>
+									<li>Use <a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal">CollectionMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal">MemoryMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe">Unsafe</a> to access the underlying data directly</li>
+								</ul>
 							</ul>
 							<li>Pool and re-use buffers</li>
 							<li>For smaller local buffers, consider using the stack</li>
@@ -1091,6 +1101,10 @@
 								attention to unnecessary boxing</li>
 							<li>Move allocations away from the hot-path where possible</li>
 						</ul>
+					</ul>
+				</section>
+				<section>
+					<ul>
 						<li>Avoid unnecessary copying of memory
 							<ul>
 								<li>Watch out for immutable/readonly data that is copied</li>
