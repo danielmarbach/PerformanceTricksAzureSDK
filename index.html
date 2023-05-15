@@ -762,7 +762,7 @@
 					<aside class="notes">
 						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the
 						memory on the method's stack that is cleared when the method returns. But why even copying when
-						Guid ctors have support for ReadOnlySpan&lt;T&gt;? We will be talking about techniques of how to
+						Guid ctors have support for ReadOnlySpan&lt;T&gt;? Due to having to target .NET Standard 2.0, where we can only pass `byte[]` to the Guid constructor and we have to take endianness into account, the actual version was a bit more complicated and the above example is slightly twisting the reality, call it artistic freedom. We will be talking about techniques of how to
 						avoid
 						memory copying later. Where you have to copy memory though this technique comes in handy.
 					</aside>
