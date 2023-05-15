@@ -25,7 +25,7 @@
 			<section data-background="img/juggler-trick-magician-juggle-1216853.jpg">
 				<div style="left: 10; width: 52%; padding: 25px; font-size: 50px; text-align: left;">
 					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from
-						contributing to the Azure .NET SDK</h3>
+						contributing to open source .NET packages</h3>
 					<p style="text-transform: none;color: rgba(31, 129, 74, 0.6); font-size: 30px;">
 						<i class="fa fa-twitter" aria-hidden="true"><a
 								style="text-transform: none;color: rgba(31, 129, 74, 0.6)"
@@ -304,7 +304,7 @@
 						we can by applying all those rules to the previous code in the best/optimal case.
 					</aside>
 				</section>
-				<section data-visibility="hidden">
+				<section>
 					<pre class="stretch" style="font-size: 0.8em"><code class="language-csharp" data-line-numbers="|6" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens)
 							=> CompleteInternalAsync(lockTokens);
@@ -330,7 +330,7 @@
 						IReadOnlyCollection (context)
 					</aside>
 				</section>
-				<section data-visibility="hidden">
+				<section>
 					<pre class="stretch" style="font-size: 0.7em"><code class="language-csharp" data-line-numbers="|2-6|10|12-13|17-18" data-trim data-noescape><script type="text/template">
 						public Task CompleteAsync(IEnumerable<string> lockTokens) {
 							IReadOnlyCollection<string> readOnlyCollection = lockTokens switch
@@ -367,7 +367,7 @@
 						because lists can automatically grow which can allocate a lot and takes time).
 					</aside>
 				</section>
-				<section data-visibility="hidden" data-background="img/time-g5afc932c4_1280.jpg">
+				<section data-background="img/time-g5afc932c4_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">Benchmarking Time!</h2>
 						<p>We can only know the before and after when we measure it.</p>
@@ -680,7 +680,7 @@
 						</div>
 						<img src="benchmarks/NServiceBusPipelineExecutionCropped.png" />
 						<p style="font-size: 1.5em"><a
-								href="https://particular.net/blog/pipeline-and-closure-allocations">particular.net/blog/pipeline-and-closure-allocations</a>
+								href="https://go.particular.net/ndc-oslo-2023-pipeline">go.particular.net/ndc-oslo-2023-pipeline</a>
 						</p>
 					</div>
 				</section>
@@ -762,7 +762,7 @@
 					<aside class="notes">
 						With the introduction of Span&lt;T&gt; and the stackalloc keyword, we can directly allocate the
 						memory on the method's stack that is cleared when the method returns. But why even copying when
-						Guid ctors have support for ReadOnlySpan&lt;T&gt;? We will be talking about techniques of how to
+						Guid ctors have support for ReadOnlySpan&lt;T&gt;? Due to having to target .NET Standard 2.0, where we can only pass `byte[]` to the Guid constructor and we have to take endianness into account, the actual version was a bit more complicated and the above example is slightly twisting the reality, call it artistic freedom. We will be talking about techniques of how to
 						avoid
 						memory copying later. Where you have to copy memory though this technique comes in handy.
 					</aside>
@@ -1118,7 +1118,7 @@
 						</li>
 					</ul>
 				</section>
-				<section data-visibility="hidden" data-background="img/quiz-2137664_1280.jpg">
+				<section data-background="img/quiz-2137664_1280.jpg">
 					<div class="image-slide-box">
 						<h2 style="text-transform: none">In case you are up for a challenge</h2>
 						<p>The original <code style="color: lightskyblue;">ComputeHash</code> method had a <i
