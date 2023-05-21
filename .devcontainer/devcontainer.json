@@ -10,7 +10,6 @@
 		"vscode": {
 			"extensions": [
 				"dbaeumer.vscode-eslint",
-				"eg2.vscode-npm-script",
 				"christian-kohler.npm-intellisense",
                 "ecmel.vscode-html-css",
                 "esbenp.prettier-vscode",
