@@ -279,21 +279,22 @@
 				<section data-auto-animate>
 					<h2 class="r-fit-text">LINQ to collection-based operations</h2>
 					<ul class="r-fit-text">
-						<li>Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
+						<li class="fragment fade-in">Use <code>Array.Empty&lt;T&gt;</code> to represent empty arrays
 						</li>
-						<li>Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
+						<li class="fragment fade-in">Use <code>Enumerable.Empty&lt;T&gt;</code> to represent empty
 							enumerables</li>
-						<li>Prevent collections from growing</li>
-						<li>Use concrete collection types</li>
-						<li>Leverage pattern matching or
+						<li class="fragment fade-in">Prevent collections from growing</li>
+						<li class="fragment fade-in">Use concrete collection types</li>
+						<li class="fragment fade-in">Leverage pattern matching or
 							<code>Enumerable.TryGetNonEnumeratedCount</code>
 						</li>
-						<li>Wait with instantiating collections until really needed</li>
-						<li>There be dragons</li>
-						<ul>
-							<li>Align access or use unsafe avoid bound checks</li>
-							<li>Use <a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal">CollectionMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal">MemoryMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe">Unsafe</a> to access the underlying data directly</li>
-						</ul>
+						<li class="fragment fade-in">Wait with instantiating collections until really needed</li>
+						<li class="fragment fade-in">There be dragons
+							<ul>
+								<li>Align access or use unsafe to avoid bound checks</li>
+								<li>Use <a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal">CollectionMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal">MemoryMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe">Unsafe</a> to access the underlying data directly</li>
+							</ul>
+						</li>
 					</ul>
 					<!-- For the short 45 min version -->
 					<aside class="notes">
@@ -1090,7 +1091,7 @@
 								<li>Wait with instantiating collections until really needed</li>
 								<li>There be dragons</li>
 								<ul>
-									<li>Align access or use unsafe avoid bound checks</li>
+									<li>Align access or use unsafe to avoid bound checks</li>
 									<li>Use <a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal">CollectionMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal">MemoryMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe">Unsafe</a> to access the underlying data directly</li>
 								</ul>
 							</ul>
