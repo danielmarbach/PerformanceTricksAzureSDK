@@ -6,7 +6,7 @@
 	<meta name="viewport"
 		content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-	<title>Performance tricks I learned from contributing open source .NET packages</title>
+	<title>Performance tricks I learned from contributing to the Azure .NET SDK</title>
 	<meta name="author" content="Daniel Marbach">
 
 	<link rel="stylesheet" href="dist/reset.css">
@@ -24,8 +24,7 @@
 		<div class="slides">
 			<section data-background="img/juggler-trick-magician-juggle-1216853.jpg">
 				<div style="left: 10; width: 52%; padding: 25px; font-size: 50px; text-align: left;">
-					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from
-						contributing to open source .NET packages</h3>
+					<h3 style="text-transform: none;color: rgba(31, 129, 74, 0.9);">Performance tricks I learned from contributing to the Azure .NET SDK</h3>
 					<p style="text-transform: none;color: rgba(31, 129, 74, 0.6); font-size: 30px;">
 						<i class="fa fa-twitter" aria-hidden="true"><a
 								style="text-transform: none;color: rgba(31, 129, 74, 0.6)"
@@ -295,6 +294,7 @@
 								<li>Use <a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal">CollectionMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal">MemoryMarshal</a>/<a href="https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.unsafe">Unsafe</a> to access the underlying data directly</li>
 							</ul>
 						</li>
+						<li class="fragment fade-in">Keep yourself up to date with latest .NET performance improvements</li>
 					</ul>
 					<!-- For the short 45 min version -->
 					<aside class="notes">
@@ -303,6 +303,12 @@
 						this talk that goes into more details and shows a before and after of the code we already
 						optimized. Just to show you what gains we can achieve in the best case here is the improvements
 						we can by applying all those rules to the previous code in the best/optimal case.
+					</aside>
+				</section>
+				<section data-background="benchmarks/PerformanceNet8.png" data-background-size="100%">
+					<aside class="notes">
+						As developers and engineers we want rules that we can apply. I have compiled them based on my
+						experience.
 					</aside>
 				</section>
 				<section>
@@ -681,7 +687,7 @@
 						</div>
 						<img src="benchmarks/NServiceBusPipelineExecutionCropped.png" />
 						<p style="font-size: 1.5em"><a
-								href="https://go.particular.net/ndc-oslo-2023-pipeline">go.particular.net/ndc-oslo-2023-pipeline</a>
+								href="https://go.particular.net/ndc-porto-2023-pipeline">go.particular.net/ndc-porto-2023-pipeline</a>
 						</p>
 					</div>
 				</section>
