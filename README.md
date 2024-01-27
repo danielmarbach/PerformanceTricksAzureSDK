@@ -744,3 +744,4 @@ For us, as engineers, it means we have to know what to ignore and knowing what t
 - [Getting started with dotMemory](https://www.youtube.com/watch?v=6Tmcx6cTExg)
 - [How to profile .NET Core applications with dotTrace](https://www.youtube.com/watch?v=ZWS156lKAos)
 - [Performance Profiling with Visual Studio](https://www.youtube.com/watch?v=FpibK0PKfcI&list=PLReL099Y5nRf2cOurn1hI-gSRxsdbC27C)
+
